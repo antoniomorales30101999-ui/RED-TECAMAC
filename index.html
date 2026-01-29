@@ -30,7 +30,6 @@
         #contenedorTabla { display: none; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         .table thead th { background-color: #f8f9fa !important; color: #004a99 !important; text-transform: uppercase; font-size: 0.75rem; border-bottom: 2px solid #dee2e6 !important; }
         mark { background: #fff3cd !important; color: #856404 !important; font-weight: bold; border-radius: 2px; }
-        .placeholder-text { text-align: center; color: #adb5bd; margin-top: 80px; font-size: 1.2rem; font-style: italic; }
     </style>
 </head>
 <body>
@@ -43,7 +42,7 @@
     <input type="text" id="mainSearch" placeholder="🔍 Escriba o pegue para buscar...">
 </div>
 
-<div id="mensajeVacio" class="placeholder-text">
+<div id="mensajeVacio" class="text-center text-muted mt-5">
     <p>Esperando búsqueda...</p>
 </div>
 
@@ -71,7 +70,12 @@
                     deferRender: true,
                     scrollY: "55vh",
                     scrollCollapse: true,
-                    dom: 'rtip'
+                    dom: 'rtip',
+                    order: [[7, 'asc']], // Ordenar por columna Puerto (índice 7)
+                    language: {
+                        "info": "Mostrando _TOTAL_ registros",
+                        "paginate": { "next": "Sig", "previous": "Ant" }
+                    }
                 });
 
                 $('#mainSearch').on('keyup input', function() {
@@ -97,9 +101,3 @@
                     }
                 });
             }
-        });
-    });
-</script>
-
-</body>
-</html>
