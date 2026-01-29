@@ -3,72 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta Red Tecamac</title>
-    <script>
-        var claveCorrecta = "Tecamac2026*"; // <--- Puedes cambiar esta clave cuando quieras
-        var acceso = sessionStorage.getItem("acceso_permitido");
+    <title>Panel de Red - Distrito tecamac</title>
 
-        if (acceso !== "true") {
-            var intento = prompt("🔐 SISTEMA PRIVADO\nIngrese la clave de acceso para ver la base de datos:");
+    <script>
+        var claveCorrecta = "Tecamac2026*";
+        if (sessionStorage.getItem("acceso_permitido") !== "true") {
+            var intento = prompt("🔐 SISTEMA PRIVADO - DISTRITO NEZA\nIngrese la clave de acceso para continuar:");
             if (intento === claveCorrecta) {
                 sessionStorage.setItem("acceso_permitido", "true");
             } else {
-                alert("🚫 Clave incorrecta. Acceso denegado.");
+                alert("🚫 Acceso denegado. Contacte al administrador.");
                 window.location.href = "https://www.google.com";
             }
         }
     </script>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/scroller/2.2.0/css/scroller.bootstrap5.min.css" rel="stylesheet">
+
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/scroller/2.2.0/js/dataTables.scroller.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+    <style>
+        body { background-color: #f4f7f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* Encabezado Estilo Dashboard */
+        .app-header {
+            background: linear-gradient(135deg, #004a99 0%, #002d5f 100%);
+            color: white;
+            padding: 30px 20px;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin-bottom: 25px;
+        }
+
+        /* Contenedor de la Tabla */
+        .data-card {
+            background: white;
+            border-radius: 20px;
+            margin: 0 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border: none;
+        }
+
+        /* Buscador Flotante Estilo Google */
+        .dataTables_filter { text-align: center !important; margin-bottom: 20px; }
+        .dataTables_filter input {
+            border: 2px solid #004a99 !important;
+            border-radius: 50px !important;
+            padding: 12px 25px !important;
+            width: 100% !important;
+            max-width: 500px;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(0,74,153,0.1);
+            transition: all 0.3s ease;
+        }
+        .dataTables_filter input:focus {
+            box-shadow: 0 6px 15px rgba(0,74,153,0.2);
+            outline: none;
+        }
+
+        /* Estilo de Tabla Profesional */
+        .table thead th {
+            background-color: #f8f9fa;
+            color: #555;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            border-top: none;
+        }
+        .table-hover tbody tr:hover {
+            background-color: #f0f7ff !important;
+            transition: 0.2s;
+        }
+
+        /* Footer de la tabla */
+        .dataTables_info { font-size: 0.85rem; color: #666; padding-top: 15px; }
+    </style>
 </head>
-<body class="bg-light">
-    <div class="container-fluid mt-4">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white text-center">
-                <h4>📡 Sistema de Consulta - Distrito Tecamac</h4>
-            </div>
-            <div class="card-body">
-                <table id="tablaRed" class="table table-striped table-bordered w-100">
-                    <thead>
-                        <tr>
-                            <th>Cuenta</th><th>QR</th><th>OLT</th><th>FSP</th>
-                            <th>Latitud</th><th>Longitud</th><th>Ubicación</th><th>Puerto</th>
-                        </tr>
-                    </thead>
-                </table>
-            </div>
-        </div>
-    </div>
+<body>
 
-    <script>
-        $(document).ready(function() {
-            Papa.parse("datos.csv", {
-                download: true,
-                header: false,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    $('#tablaRed').DataTable({
-                        data: results.data,
-                        deferRender: true,
-                        scrollY: "60vh",
-                        scrollCollapse: true,
-                        scroller: true,
-                        language: {
-                            "search": "<b>🔍 BUSCAR:</b>",
-                            "info": "Mostrando _TOTAL_ registros",
-                            "paginate": { "next": "Sig", "previous": "Ant" }
-                        }
-                    });
-                }
-            });
+<div class="app-header text-center">
+    <h1 class="h3 fw-bold mb-1">🛰️ DISTRITO NEZA</h1>
+    <p class="small opacity-75 mb-0">Sistema de Consulta de Red y Puertos N2</p>
+</div>
+
+<div class="data-card">
+    <table id="tablaMaster" class="table table-hover w-100">
+        <thead>
+            <tr>
+                <th>Cuenta</th>
+                <th>QR</th>
+                <th>OLT</th>
+                <th>FSP</th>
+                <th>Latitud</th>
+                <th>Longitud</th>
+                <th>Ubicación</th>
+                <th>Puerto</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<script>
+    $(document).ready(function() {
+        // Carga el CSV externo
+        Papa.parse("datos.csv", {
+            download: true,
+            header: false,
+            skipEmptyLines: true,
+            complete: function(results) {
+                $('#tablaMaster').DataTable({
+                    data: results.data,
+                    deferRender: true,    // Crítico para velocidad con 200k filas
+                    scrollY: "55vh",      // Altura del scroll
+                    scrollCollapse: true,
+                    scroller: true,       // Motor de scroll infinito
+                    language: {
+                        "search": "",     // Quitamos el texto "Search"
+                        "searchPlaceholder": "🔍 Buscar por cuenta, QR o puerto...",
+                        "info": "Total: _TOTAL_ registros",
+                        "loadingRecords": "Cargando base de datos, un momento...",
+                        "zeroRecords": "No se encontraron resultados"
+                    },
+                    dom: '<"mb-4"f>rt<"d-flex justify-content-between align-items-center"i>'
+                });
+            }
         });
-    </script>
+    });
+</script>
+
 </body>
-
 </html>
-
-
