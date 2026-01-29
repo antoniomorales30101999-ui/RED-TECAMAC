@@ -8,9 +8,9 @@
     <script>
         var claveCorrecta = "Tecamac2026*";
         if (sessionStorage.getItem("acceso_permitido") !== "true") {
-            var intento = prompt("🔐 ACCESO RESTRINGIDO\nIngrese clave técnica:");
+            var intento = prompt("🔐 ACCESO\nIngrese clave:");
             if (intento === claveCorrecta) { sessionStorage.setItem("acceso_permitido", "true"); }
-            else { alert("Acceso denegado"); window.location.href = "https://google.com"; }
+            else { window.location.href = "https://google.com"; }
         }
     </script>
 
@@ -20,84 +20,51 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
 
     <style>
-        body { background-color: #f4f7f6; color: #333; font-family: 'Segoe UI', sans-serif; padding: 15px; }
+        body { background-color: #0d1b2a; color: #e0e1dd; font-family: 'Segoe UI', sans-serif; padding: 20px; }
         
-        .app-header {
-            background: linear-gradient(135deg, #004a99 0%, #002d5f 100%);
-            color: white;
-            padding: 30px 15px;
-            border-bottom-left-radius: 25px;
-            border-bottom-right-radius: 25px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        .app-header h1 { font-weight: bold; font-size: 1.6rem; margin: 0; }
+        /* BUSCADOR 1: MANUAL */
+        .search-manual { background: #1b263b; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #415a77; }
+        #manualSearch { background: #0d1b2a; border: 1px solid #00a8ff; color: white; border-radius: 5px; width: 100%; padding: 10px; }
 
-        /* BUSCADOR ÚNICO CENTRAL */
-        .search-wrapper { max-width: 700px; margin: 0 auto 30px auto; }
-        #mainSearch {
-            background: white;
-            border: 2px solid #004a99;
-            border-radius: 50px !important;
-            padding: 18px 30px !important;
-            width: 100% !important;
-            font-size: 1.2rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            outline: none;
-            transition: 0.3s;
-        }
-        #mainSearch:focus { box-shadow: 0 6px 20px rgba(0,74,153,0.2); border-color: #0056b3; }
+        /* BUSCADOR 2: LOGS (EXTRACTOR) */
+        .search-log { background: #1b263b; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid #415a77; }
+        .label-log { font-size: 0.85rem; color: #8ecae6; text-align: center; margin-bottom: 10px; display: block; font-weight: bold; }
+        #logInput { background: #0d1b2a; border: 1px solid #3fb950; color: #3fb950; border-radius: 5px; width: 100%; font-family: monospace; padding: 10px; font-size: 0.85rem; }
 
-        /* TABLA (OCULTA POR DEFECTO) */
-        #contenedorTabla { 
-            display: none; 
-            background: white; 
-            border-radius: 20px; 
-            padding: 20px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
-        }
+        /* TABLA */
+        #contenedorTabla { display: none; margin-top: 25px; background: #1b263b; padding: 20px; border-radius: 10px; }
+        .table { color: #fff !important; border: 1px solid #415a77 !important; }
+        .table thead th { background: #0d1b2a !important; color: #00a8ff !important; border-bottom: 2px solid #415a77 !important; text-align: center; }
+        .table td { text-align: center; border-color: #415a77 !important; }
         
-        .table thead th { 
-            background-color: #f8f9fa !important; 
-            color: #004a99 !important; 
-            text-transform: uppercase; 
-            font-size: 0.75rem; 
-            border-bottom: 2px solid #dee2e6 !important; 
-        }
-        
-        mark { background: #fff3cd !important; color: #856404 !important; font-weight: bold; border-radius: 2px; }
-        .placeholder-text { text-align: center; color: #adb5bd; margin-top: 80px; font-size: 1.2rem; font-style: italic; }
+        #noEncontrados { color: #e63946; text-align: center; margin-top: 15px; font-size: 0.85rem; display: none; }
     </style>
 </head>
 <body>
 
-<div class="app-header">
-    <h1>🛰️ SISTEMA RED TECAMAC</h1>
-    <p class="small opacity-75 mb-0">Buscador Universal de Infraestructura</p>
+<div class="search-manual">
+    <input type="text" id="manualSearch" placeholder="🔍 buscar...">
 </div>
 
-<div class="search-wrapper">
-    <input type="text" id="mainSearch" placeholder="🔍 buscar...">
-</div>
-
-<div id="mensajeVacio" class="placeholder-text">
-    <p>Ingrese parámetros para filtrar la red...</p>
+<div class="buscar mdr...">
+    <span class="label-log">Buscar Coincidencias En Cuentas (Pegar Log OLT):</span>
+    <textarea id="logInput" rows="3" placeholder="Pegue aquí el texto con Activated (Online)..."></textarea>
 </div>
 
 <div id="contenedorTabla">
-    <table id="tablaMaestra" class="table table-hover w-100">
+    <div class="text-center small mb-3">Tabla De Cuentas Buscadas:</div>
+    <table id="tablaMaestra" class="table table-bordered w-100">
         <thead>
             <tr>
-                <th>Cuenta</th><th>QR</th><th>OLT</th><th>FSP</th>
-                <th>Lat</th><th>Lon</th><th>Ubicación</th><th>Puerto</th>
+                <th>QR</th><th>OLT</th><th>Latitud</th><th>Longitud</th><th>S. Perdido</th><th>Cuenta</th>
             </tr>
         </thead>
     </table>
 </div>
+
+<div id="noEncontrados">Cuentas no encontradas: <span id="listaFaltantes"></span></div>
 
 <script>
     var table;
@@ -110,45 +77,58 @@
                 table = $('#tablaMaestra').DataTable({
                     data: results.data,
                     deferRender: true,
-                    scrollY: "55vh",
-                    scrollCollapse: true,
-                    dom: 'rtip',
-                    language: { "info": "Registros encontrados: _TOTAL_" }
+                    dom: 't',
+                    paging: false
                 });
 
-                $('#mainSearch').on('keyup input', function() {
-                    var val = $(this).val().trim();
-
-                    if (val === "") {
-                        $('#contenedorTabla').hide();
-                        $('#mensajeVacio').show();
-                        table.search('').draw();
-                    } else {
+                // Lógica Buscador 1: Manual
+                $('#manualSearch').on('input', function() {
+                    var val = $(this).val();
+                    if(val.length > 0) {
                         $('#contenedorTabla').show();
-                        $('#mensajeVacio').hide();
-
-                        // Lógica Inteligente: si hay espacios (como en un log), busca por palabras
-                        var query = val.includes(' ') || val.includes('\t') ? 
-                                    val.replace(/\t/g, ' ').split(' ').filter(w => w.length > 1).join(' ') : 
-                                    val;
-                        
-                        table.search(query).draw();
+                        table.search(val).draw();
+                    } else {
+                        checkEmpty();
                     }
                 });
 
-                table.on('draw', function() {
-                    var body = $(table.table().body());
-                    body.unmark();
-                    var searchVal = table.search();
-                    if(searchVal) {
-                        searchVal.split(' ').forEach(word => { if(word.length > 2) body.mark(word); });
+                // Lógica Buscador 2: Log (Extractor de Cuentas 01XXXXXXXX)
+                $('#logInput').on('input', function() {
+                    var rawText = $(this).val();
+                    var cuentas = rawText.match(/01\d{8}/g); // Busca cuentas que inician con 01
+
+                    if (cuentas && cuentas.length > 0) {
+                        var unicas = [...new Set(cuentas)];
+                        $('#contenedorTabla').show();
+                        // Filtra la columna 5 (Cuenta) con las cuentas encontradas
+                        table.column(5).search(unicas.join('|'), true, false).draw();
+                        actualizarFaltantes(unicas);
+                    } else {
+                        checkEmpty();
                     }
                 });
             }
         });
     });
+
+    function checkEmpty() {
+        if($('#manualSearch').val() === "" && $('#logInput').val() === "") {
+            $('#contenedorTabla, #noEncontrados').hide();
+            table.search('').column(5).search('').draw();
+        }
+    }
+
+    function actualizarFaltantes(buscadas) {
+        var encontradas = table.rows({search:'applied'}).data().toArray().map(row => row[5]);
+        var faltantes = buscadas.filter(c => !encontradas.includes(c));
+        if (faltantes.length > 0) {
+            $('#noEncontrados').show();
+            $('#listaFaltantes').text(faltantes.join(', '));
+        } else {
+            $('#noEncontrados').hide();
+        }
+    }
 </script>
 
 </body>
 </html>
-
