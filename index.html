@@ -8,7 +8,7 @@
     <script>
         var claveCorrecta = "Tecamac2026*";
         if (sessionStorage.getItem("acceso_permitido") !== "true") {
-            var intento = prompt("🔐 SISTEMA PRIVADO - DISTRITO NEZA\nIngrese la clave de acceso para continuar:");
+            var intento = prompt("🔐 SISTEMA PRIVADO - DISTRITO Tecamac\nIngrese la clave de acceso para continuar:");
             if (intento === claveCorrecta) {
                 sessionStorage.setItem("acceso_permitido", "true");
             } else {
@@ -90,7 +90,7 @@
 <body>
 
 <div class="app-header text-center">
-    <h1 class="h3 fw-bold mb-1">🛰️ DISTRITO NEZA</h1>
+    <h1 class="h3 fw-bold mb-1">🛰️ DISTRITO TECAMAC</h1>
     <p class="small opacity-75 mb-0">Sistema de Consulta de Red y Puertos N2</p>
 </div>
 
@@ -141,3 +141,4 @@
 
 </body>
 </html>
+
