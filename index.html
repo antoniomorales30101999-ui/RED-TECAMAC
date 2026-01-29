@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Red Tecamac</title>
+    <title>Red tecamac</title>
 
     <script>
         var claveCorrecta = "Tecamac2026*";
@@ -23,67 +23,53 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
 
     <style>
-        body { background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; }
-        .app-header { background: #161b22; border-bottom: 2px solid #58a6ff; padding: 15px; text-align: center; }
-        
-        /* DISEÑO DE BUSCADOR PRINCIPAL */
-        .dataTables_filter { width: 100%; text-align: center !important; padding: 20px 10px 10px 10px; }
-        .dataTables_filter input {
-            background-color: #0d1117 !important;
-            border: 2px solid #58a6ff !important;
-            border-radius: 12px !important;
-            color: #fff !important;
-            padding: 15px !important;
-            width: 100% !important;
-            max-width: 700px;
-            font-size: 1.2rem;
-            box-shadow: 0 0 15px rgba(88, 166, 255, 0.2);
+        body { background-color: #f0f2f5; color: #333; font-family: sans-serif; padding: 15px; }
+        .app-header { text-align: center; margin-bottom: 20px; }
+        .app-header h1 { color: #004a99; font-size: 1.4rem; font-weight: bold; }
+
+        /* BUSCADOR PRINCIPAL */
+        .search-box {
+            background: #fff; border: 2px solid #004a99; border-radius: 10px;
+            padding: 15px; width: 100%; font-size: 1.2rem; margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); outline: none;
         }
 
-        /* ÁREA DE LOGS (AHORA ABAJO DEL BUSCADOR) */
-        .log-search-area {
-            background: #161b22;
-            border-radius: 12px;
-            margin: 0 15px 15px 15px;
-            padding: 15px;
-            border: 1px solid #30363d;
-        }
-        #logInput {
-            background: #0d1117;
-            border: 1px solid #3fb950;
-            color: #3fb950;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.85rem;
-        }
+        /* ÁREA DE LOGS */
+        .log-container { background: #e9ecef; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ced4da; }
+        #logInput { background: #fff; border: 1px solid #adb5bd; color: #28a745; width: 100%; font-family: monospace; padding: 10px; border-radius: 5px; outline: none; }
 
-        .main-card { background: #161b22; border-radius: 12px; margin: 0 15px 15px 15px; padding: 10px; border: 1px solid #30363d; }
-        .table { color: #c9d1d9 !important; border-color: #30363d !important; }
-        .table thead th { background-color: #0d1117 !important; color: #58a6ff !important; font-size: 0.75rem; border-bottom: 2px solid #30363d !important; }
+        /* CONTENEDOR DE TABLA (OCULTO POR DEFECTO) */
+        #contenedorTabla { display: none; background: #fff; border-radius: 10px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         
-        mark { background: #ffeb3b !important; color: #000 !important; border-radius: 2px; }
-        .dataTables_info { color: #8b949e; font-size: 0.8rem; padding: 10px; }
+        .table thead th { background-color: #f8f9fa !important; color: #004a99 !important; border-bottom: 2px solid #004a99 !important; font-size: 0.8rem; }
+        mark { background: #fff3cd !important; color: #856404 !important; font-weight: bold; }
+        
+        .placeholder-text { text-align: center; color: #999; margin-top: 60px; font-size: 1.1rem; }
     </style>
 </head>
 <body>
 
 <div class="app-header">
-    <h1 class="h5 mb-0">📡 DISTRITO TECAMAC </h1>
+    <h1>🛰️ CONSULTA RED TECAMAC</h1>
 </div>
 
-<div id="filter_wrapper"></div>
+<input type="text" id="mainSearch" class="search-box" placeholder="🔍 Buscar por Cuenta, QR, Nombre...">
 
-<div class="log-search-area">
-    <label class="form-label small text-secondary fw-bold">📋 PEGADO DE LOG O TEXTO COMPLETO:</label>
-    <textarea class="form-control" id="logInput" rows="2" placeholder="Pegue aquí el texto largo para un filtrado inteligente..."></textarea>
+<div class="log-container">
+    <label class="small text-muted fw-bold mb-1">📋 PEGADO DE LOG (TEXTO LARGO):</label>
+    <textarea id="logInput" rows="2" placeholder="Pegue el log aquí..."></textarea>
 </div>
 
-<div class="main-card">
+<div id="mensajeVacio" class="placeholder-text">
+    <p>Esperando datos de búsqueda...</p>
+</div>
+
+<div id="contenedorTabla">
     <table id="tablaMaestra" class="table table-hover w-100">
         <thead>
             <tr>
                 <th>Cuenta</th><th>QR</th><th>OLT</th><th>FSP</th>
-                <th>Latitud</th><th>Longitud</th><th>Ubicación</th><th>Puerto</th>
+                <th>Lat</th><th>Lon</th><th>Ubicación</th><th>Puerto</th>
             </tr>
         </thead>
     </table>
@@ -91,7 +77,6 @@
 
 <script>
     var table;
-
     $(document).ready(function() {
         Papa.parse("datos.csv", {
             download: true,
@@ -103,34 +88,45 @@
                     deferRender: true,
                     scrollY: "50vh",
                     scrollCollapse: true,
-                    language: {
-                        "search": "",
-                        "searchPlaceholder": "🔍 BUSCAR DATO ESPECÍFICO...",
-                        "info": "Registros cargados: _TOTAL_",
-                        "loadingRecords": "Sincronizando red..."
-                    },
-                    dom: 'firt'
+                    dom: 'rtip',
+                    language: { "info": "Encontrados: _TOTAL_ registros" }
                 });
 
-                // Mover el buscador nativo al contenedor superior
-                $('.dataTables_filter').detach().appendTo('#filter_wrapper');
+                function procesarBusqueda() {
+                    var textoNormal = $('#mainSearch').val().trim();
+                    var textoLog = $('#logInput').val().trim();
 
-                // Lógica de pegado de texto largo
-                $('#logInput').on('keyup change', function() {
-                    var val = $(this).val();
-                    var keywords = val.replace(/\t/g, ' ').split(' ').filter(w => w.length > 1);
-                    table.search(keywords.join(' ')).draw();
-                });
+                    // Si ambos campos están vacíos, ocultamos todo
+                    if (textoNormal === "" && textoLog === "") {
+                        $('#contenedorTabla').hide();
+                        $('#mensajeVacio').show();
+                        table.search('').draw(); // Reseteamos la búsqueda interna
+                    } else {
+                        // Si hay texto, mostramos tabla y filtramos
+                        $('#contenedorTabla').show();
+                        $('#mensajeVacio').hide();
 
-                // Marcado de texto
+                        // Prioridad al log si tiene contenido, si no el buscador normal
+                        var consulta = "";
+                        if (textoLog !== "") {
+                            consulta = textoLog.replace(/\t/g, ' ').split(' ').filter(w => w.length > 1).join(' ');
+                        } else {
+                            consulta = textoNormal;
+                        }
+                        
+                        table.search(consulta).draw();
+                    }
+                }
+
+                $('#mainSearch').on('keyup input', procesarBusqueda);
+                $('#logInput').on('keyup change input', procesarBusqueda);
+
                 table.on('draw', function() {
                     var body = $(table.table().body());
                     body.unmark();
                     var searchVal = table.search();
                     if(searchVal) {
-                        searchVal.split(' ').forEach(word => {
-                            if(word.length > 2) body.mark(word);
-                        });
+                        searchVal.split(' ').forEach(word => { if(word.length > 2) body.mark(word); });
                     }
                 });
             }
