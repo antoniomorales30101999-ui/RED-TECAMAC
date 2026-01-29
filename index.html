@@ -3,79 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Red tecamac</title>
+    <title>Red Tecamac</title>
 
     <script>
         var claveCorrecta = "Tecamac2026*";
         if (sessionStorage.getItem("acceso_permitido") !== "true") {
-            var intento = prompt("🔐 SISTEMA PRIVADO - DISTRITO NEZA\nIngrese clave técnica de acceso:");
-            if (intento === claveCorrecta) {
-                sessionStorage.setItem("acceso_permitido", "true");
-            } else {
-                alert("🚫 Acceso denegado.");
-                window.location.href = "https://www.google.com";
-            }
+            var intento = prompt("🔐 ACCESO TÉCNICO\nIngrese clave:");
+            if (intento === claveCorrecta) { sessionStorage.setItem("acceso_permitido", "true"); }
+            else { alert("Denegado"); window.location.href = "https://google.com"; }
         }
     </script>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/scroller/2.2.0/css/scroller.bootstrap5.min.css" rel="stylesheet">
-
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/scroller/2.2.0/js/dataTables.scroller.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
 
     <style>
         body { background-color: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; }
+        .app-header { background: #161b22; border-bottom: 2px solid #58a6ff; padding: 15px; text-align: center; }
         
-        /* HEADER */
-        .app-header {
-            background: #161b22;
-            border-bottom: 1px solid #30363d;
-            padding: 20px;
-            text-align: center;
-        }
-        .app-header h1 { color: #58a6ff; font-size: 1.4rem; font-weight: 700; margin: 0; }
-
-        /* BUSCADOR RESALTADO */
-        .dataTables_filter { width: 100%; text-align: center !important; padding: 15px; }
+        /* DISEÑO DE BUSCADOR PRINCIPAL */
+        .dataTables_filter { width: 100%; text-align: center !important; padding: 20px 10px 10px 10px; }
         .dataTables_filter input {
             background-color: #0d1117 !important;
             border: 2px solid #58a6ff !important;
-            border-radius: 10px !important;
+            border-radius: 12px !important;
             color: #fff !important;
-            padding: 12px 20px !important;
+            padding: 15px !important;
             width: 100% !important;
-            max-width: 600px;
-            font-size: 1.1rem;
+            max-width: 700px;
+            font-size: 1.2rem;
             box-shadow: 0 0 15px rgba(88, 166, 255, 0.2);
         }
 
-        /* TABLA DARK */
-        .main-card { background: #161b22; border-radius: 12px; margin: 10px; padding: 10px; border: 1px solid #30363d; }
+        /* ÁREA DE LOGS (AHORA ABAJO DEL BUSCADOR) */
+        .log-search-area {
+            background: #161b22;
+            border-radius: 12px;
+            margin: 0 15px 15px 15px;
+            padding: 15px;
+            border: 1px solid #30363d;
+        }
+        #logInput {
+            background: #0d1117;
+            border: 1px solid #3fb950;
+            color: #3fb950;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        .main-card { background: #161b22; border-radius: 12px; margin: 0 15px 15px 15px; padding: 10px; border: 1px solid #30363d; }
         .table { color: #c9d1d9 !important; border-color: #30363d !important; }
         .table thead th { background-color: #0d1117 !important; color: #58a6ff !important; font-size: 0.75rem; border-bottom: 2px solid #30363d !important; }
         
-        /* ILUMINACIÓN DE BÚSQUEDA (MARCADOR) */
-        mark {
-            background: #ffeb3b !important; /* Amarillo brillante */
-            color: #000 !important;
-            padding: 0;
-            border-radius: 2px;
-        }
-
-        .table-hover tbody tr:hover { background-color: #1f242c !important; }
+        mark { background: #ffeb3b !important; color: #000 !important; border-radius: 2px; }
         .dataTables_info { color: #8b949e; font-size: 0.8rem; padding: 10px; }
     </style>
 </head>
 <body>
 
 <div class="app-header">
-    <h1>📡 RED TECAMAC <span style="color: #3fb950; font-size: 0.8rem;">● ONLINE</span></h1>
+    <h1 class="h5 mb-0">📡 DISTRITO TECAMAC </h1>
+</div>
+
+<div id="filter_wrapper"></div>
+
+<div class="log-search-area">
+    <label class="form-label small text-secondary fw-bold">📋 PEGADO DE LOG O TEXTO COMPLETO:</label>
+    <textarea class="form-control" id="logInput" rows="2" placeholder="Pegue aquí el texto largo para un filtrado inteligente..."></textarea>
 </div>
 
 <div class="main-card">
@@ -90,32 +90,48 @@
 </div>
 
 <script>
+    var table;
+
     $(document).ready(function() {
         Papa.parse("datos.csv", {
             download: true,
             header: false,
             skipEmptyLines: true,
             complete: function(results) {
-                var table = $('#tablaMaestra').DataTable({
+                table = $('#tablaMaestra').DataTable({
                     data: results.data,
                     deferRender: true,
-                    scrollY: "60vh",
+                    scrollY: "50vh",
                     scrollCollapse: true,
-                    scroller: true,
                     language: {
                         "search": "",
-                        "searchPlaceholder": "🔎 ESCRIBE AQUÍ PARA BUSCAR E ILUMINAR...",
-                        "info": "Registros: _TOTAL_",
-                        "loadingRecords": "Cargando fibra..."
+                        "searchPlaceholder": "🔍 BUSCAR DATO ESPECÍFICO...",
+                        "info": "Registros cargados: _TOTAL_",
+                        "loadingRecords": "Sincronizando red..."
                     },
                     dom: 'firt'
                 });
 
-                // Función para ILUMINAR el texto buscado
+                // Mover el buscador nativo al contenedor superior
+                $('.dataTables_filter').detach().appendTo('#filter_wrapper');
+
+                // Lógica de pegado de texto largo
+                $('#logInput').on('keyup change', function() {
+                    var val = $(this).val();
+                    var keywords = val.replace(/\t/g, ' ').split(' ').filter(w => w.length > 1);
+                    table.search(keywords.join(' ')).draw();
+                });
+
+                // Marcado de texto
                 table.on('draw', function() {
                     var body = $(table.table().body());
-                    body.unmark(); // Limpia marcas anteriores
-                    body.mark(table.search()); // Ilumina la búsqueda actual
+                    body.unmark();
+                    var searchVal = table.search();
+                    if(searchVal) {
+                        searchVal.split(' ').forEach(word => {
+                            if(word.length > 2) body.mark(word);
+                        });
+                    }
                 });
             }
         });
