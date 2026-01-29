@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Red tecamac</title>
+    <title>RED TECAMAC</title>
 
     <script>
         var claveCorrecta = "Tecamac2026*";
         if (sessionStorage.getItem("acceso_permitido") !== "true") {
-            var intento = prompt("🔐 ACCESO TÉCNICO\nIngrese clave:");
+            var intento = prompt("🔐 ACCESO RESTRINGIDO\nIngrese clave técnica:");
             if (intento === claveCorrecta) { sessionStorage.setItem("acceso_permitido", "true"); }
-            else { alert("Denegado"); window.location.href = "https://google.com"; }
+            else { alert("Acceso denegado"); window.location.href = "https://google.com"; }
         }
     </script>
 
@@ -23,45 +23,69 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
 
     <style>
-        body { background-color: #f0f2f5; color: #333; font-family: sans-serif; padding: 15px; }
-        .app-header { text-align: center; margin-bottom: 20px; }
-        .app-header h1 { color: #004a99; font-size: 1.4rem; font-weight: bold; }
-
-        /* BUSCADOR PRINCIPAL */
-        .search-box {
-            background: #fff; border: 2px solid #004a99; border-radius: 10px;
-            padding: 15px; width: 100%; font-size: 1.2rem; margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); outline: none;
+        body { background-color: #f4f7f6; color: #333; font-family: 'Segoe UI', sans-serif; padding: 15px; }
+        
+        .app-header {
+            background: linear-gradient(135deg, #004a99 0%, #002d5f 100%);
+            color: white;
+            padding: 30px 15px;
+            border-bottom-left-radius: 25px;
+            border-bottom-right-radius: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom: 30px;
+            text-align: center;
         }
+        .app-header h1 { font-weight: bold; font-size: 1.6rem; margin: 0; }
 
-        /* ÁREA DE LOGS */
-        .log-container { background: #e9ecef; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ced4da; }
-        #logInput { background: #fff; border: 1px solid #adb5bd; color: #28a745; width: 100%; font-family: monospace; padding: 10px; border-radius: 5px; outline: none; }
+        /* BUSCADOR ÚNICO CENTRAL */
+        .search-wrapper { max-width: 700px; margin: 0 auto 30px auto; }
+        #mainSearch {
+            background: white;
+            border: 2px solid #004a99;
+            border-radius: 50px !important;
+            padding: 18px 30px !important;
+            width: 100% !important;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            outline: none;
+            transition: 0.3s;
+        }
+        #mainSearch:focus { box-shadow: 0 6px 20px rgba(0,74,153,0.2); border-color: #0056b3; }
 
-        /* CONTENEDOR DE TABLA (OCULTO POR DEFECTO) */
-        #contenedorTabla { display: none; background: #fff; border-radius: 10px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        /* TABLA (OCULTA POR DEFECTO) */
+        #contenedorTabla { 
+            display: none; 
+            background: white; 
+            border-radius: 20px; 
+            padding: 20px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
+        }
         
-        .table thead th { background-color: #f8f9fa !important; color: #004a99 !important; border-bottom: 2px solid #004a99 !important; font-size: 0.8rem; }
-        mark { background: #fff3cd !important; color: #856404 !important; font-weight: bold; }
+        .table thead th { 
+            background-color: #f8f9fa !important; 
+            color: #004a99 !important; 
+            text-transform: uppercase; 
+            font-size: 0.75rem; 
+            border-bottom: 2px solid #dee2e6 !important; 
+        }
         
-        .placeholder-text { text-align: center; color: #999; margin-top: 60px; font-size: 1.1rem; }
+        mark { background: #fff3cd !important; color: #856404 !important; font-weight: bold; border-radius: 2px; }
+        .placeholder-text { text-align: center; color: #adb5bd; margin-top: 80px; font-size: 1.2rem; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="app-header">
-    <h1>🛰️ CONSULTA RED TECAMAC</h1>
+    <h1>🛰️ SISTEMA RED TECAMAC</h1>
+    <p class="small opacity-75 mb-0">Buscador Universal de Infraestructura</p>
 </div>
 
-<input type="text" id="mainSearch" class="search-box" placeholder="🔍 Buscar por Cuenta, QR, Nombre...">
-
-<div class="log-container">
-    <label class="small text-muted fw-bold mb-1">📋 PEGADO DE LOG (TEXTO LARGO):</label>
-    <textarea id="logInput" rows="2" placeholder="Pegue el log aquí..."></textarea>
+<div class="search-wrapper">
+    <input type="text" id="mainSearch" placeholder="🔍 Pegue log u escriba dato a buscar...">
 </div>
 
 <div id="mensajeVacio" class="placeholder-text">
-    <p>Esperando datos de búsqueda...</p>
+    <p>Ingrese parámetros para filtrar la red...</p>
 </div>
 
 <div id="contenedorTabla">
@@ -86,40 +110,31 @@
                 table = $('#tablaMaestra').DataTable({
                     data: results.data,
                     deferRender: true,
-                    scrollY: "50vh",
+                    scrollY: "55vh",
                     scrollCollapse: true,
                     dom: 'rtip',
-                    language: { "info": "Encontrados: _TOTAL_ registros" }
+                    language: { "info": "Registros encontrados: _TOTAL_" }
                 });
 
-                function procesarBusqueda() {
-                    var textoNormal = $('#mainSearch').val().trim();
-                    var textoLog = $('#logInput').val().trim();
+                $('#mainSearch').on('keyup input', function() {
+                    var val = $(this).val().trim();
 
-                    // Si ambos campos están vacíos, ocultamos todo
-                    if (textoNormal === "" && textoLog === "") {
+                    if (val === "") {
                         $('#contenedorTabla').hide();
                         $('#mensajeVacio').show();
-                        table.search('').draw(); // Reseteamos la búsqueda interna
+                        table.search('').draw();
                     } else {
-                        // Si hay texto, mostramos tabla y filtramos
                         $('#contenedorTabla').show();
                         $('#mensajeVacio').hide();
 
-                        // Prioridad al log si tiene contenido, si no el buscador normal
-                        var consulta = "";
-                        if (textoLog !== "") {
-                            consulta = textoLog.replace(/\t/g, ' ').split(' ').filter(w => w.length > 1).join(' ');
-                        } else {
-                            consulta = textoNormal;
-                        }
+                        // Lógica Inteligente: si hay espacios (como en un log), busca por palabras
+                        var query = val.includes(' ') || val.includes('\t') ? 
+                                    val.replace(/\t/g, ' ').split(' ').filter(w => w.length > 1).join(' ') : 
+                                    val;
                         
-                        table.search(consulta).draw();
+                        table.search(query).draw();
                     }
-                }
-
-                $('#mainSearch').on('keyup input', procesarBusqueda);
-                $('#logInput').on('keyup change input', procesarBusqueda);
+                });
 
                 table.on('draw', function() {
                     var body = $(table.table().body());
