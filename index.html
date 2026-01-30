@@ -34,7 +34,7 @@
 </div>
 
 <div class="search-wrapper">
-    <input type="text" id="mainSearch" placeholder="🔍 Buscar cuenta, QR u OLT..." autocomplete="off">
+    <input type="text" id="mainSearch" placeholder="🔍 Buscar por Cuenta, QR u OLT..." autocomplete="off">
 </div>
 
 <div id="mensajeVacio" class="text-center text-muted mt-5">
@@ -57,7 +57,6 @@
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
-
 <script src="https://cdn.datatables.net/plug-ins/1.13.6/sorting/natural.js"></script>
 
 <script>
@@ -71,18 +70,20 @@
                 table = $('#tablaMaestra').DataTable({
                     data: results.data,
                     deferRender: true,
-                    scrollY: "55vh",
+                    scrollY: "50vh",
                     scrollCollapse: true,
                     dom: 'rtip',
-                    // Configuración de columnas
+                    // CONFIGURACIÓN DE LÍMITE Y ORDEN
+                    pageLength: 20,      // Muestra máximo 20 registros
+                    lengthChange: false, // Oculta el selector de cantidad de registros
                     columnDefs: [
-                        { type: 'natural', targets: 7 } // Aplica orden natural a la columna Puerto
+                        { type: 'natural', targets: 7 } // Orden inteligente para puertos
                     ],
-                    // Orden inicial por Puerto (columna 7) ascendente
-                    order: [[7, 'asc']], 
+                    order: [[7, 'asc']], // Inicia ordenado por columna Puerto (7)
                     language: {
                         "info": "Mostrando _TOTAL_ registros",
-                        "paginate": { "next": "Sig", "previous": "Ant" }
+                        "paginate": { "next": "Sig", "previous": "Ant" },
+                        "zeroRecords": "No hay coincidencias"
                     }
                 });
 
@@ -96,7 +97,7 @@
                         $('#contenedorTabla').show();
                         $('#mensajeVacio').hide();
                         
-                        // Buscamos y forzamos el orden por puerto cada vez que se filtra
+                        // Busca y fuerza que el resultado se mantenga en orden de puerto
                         table.search(val).order([7, 'asc']).draw();
                     }
                 });
