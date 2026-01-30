@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RED TECAMAC - Sistema Dual</title>
+    <title>RED TECAMAC - Filtro Estricto</title>
 
     <script>
         var claveCorrecta = "Tecamac2026*";
@@ -38,13 +38,13 @@
 </div>
 
 <div class="control-panel">
-    <label class="section-title">🔍 Buscador Rápido:</label>
+    <label class="section-title">🔍 Buscador Rápido (Global):</label>
     <input type="text" id="normalSearch" placeholder="Escriba OLT, QR, Ubicación..." autocomplete="off">
     
     <hr class="my-4">
 
-    <label class="section-title">📋 Buscar Coincidencias de Cuentas:</label>
-    <textarea id="batchSearch" placeholder="Pegue texto aquí. Extraeremos los números automáticamente..."></textarea>
+    <label class="section-title">📋 Buscar Coincidencias En Cuentas (Específico):</label>
+    <textarea id="batchSearch" placeholder="Pegue texto aquí. Solo buscará números en la columna 'Cuenta'..."></textarea>
     <div id="statusInfo" class="badge-count mt-2" style="display:none;"></div>
 </div>
 
@@ -64,7 +64,7 @@
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
@@ -90,49 +90,57 @@
                     }
                 });
 
-                // BUSCADOR NORMAL
+                // BUSCADOR RÁPIDO (Busca en cualquier parte de la fila)
                 $('#normalSearch').on('keyup input', function() {
                     $('#batchSearch').val(''); 
                     $('#statusInfo').hide();
                     var val = $(this).val().trim();
-                    if (val === "") { ocultarTabla(); } 
-                    else { mostrarTabla(); table.search(val).draw(); }
+                    if (val === "") { 
+                        ocultarTabla(); 
+                    } else { 
+                        mostrarTabla(); 
+                        table.column(0).search(''); // Limpiamos el filtro por columna
+                        table.search(val).draw(); 
+                    }
                 });
 
-                // BUSCADOR POR LOTE (EXTRACTOR) - CORREGIDO
+                // BUSCADOR DE CUENTAS (Busca exclusivamente en la columna 0)
                 $('#batchSearch').on('input', function() {
                     $('#normalSearch').val('');
+                    table.search(''); // Limpiamos la búsqueda global
+                    
                     var rawText = $(this).val();
-                    // Detecta números de 3 a 15 dígitos
                     var cuentasEncontradas = rawText.match(/\d{3,15}/g);
 
                     if (cuentasEncontradas && rawText.trim() !== "") {
                         var cuentasUnicas = [...new Set(cuentasEncontradas)];
-                        // Crea el filtro: (Cuenta1|Cuenta2|Cuenta3)
-                        var regexFiltro = "(" + cuentasUnicas.join('|') + ")";
+                        // El ancla ^ y $ junto con el pipe | aseguran que busque el número exacto
+                        // Pero para mayor compatibilidad usamos una regex simple: (123|456|789)
+                        var regexFiltro = "^(" + cuentasUnicas.join('|') + ")$";
                         
                         mostrarTabla();
                         $('#statusInfo').show().text(cuentasUnicas.length + " números detectados");
                         
-                        // Buscamos de forma global usando Regex para que encuentre cualquiera de los números
-                        table.search(regexFiltro, true, false).draw();
+                        // FILTRO CLAVE: Se aplica solo a la columna 0 (Cuenta)
+                        table.column(0).search(regexFiltro, true, false).draw();
                     } else {
                         if(rawText.trim() === "") { ocultarTabla(); }
                     }
                 });
 
                 function mostrarTabla() { $('#contenedorTabla').show(); $('#mensajeVacio').hide(); }
-                function ocultarTabla() { $('#contenedorTabla').hide(); $('#mensajeVacio').show(); table.search('').draw(); }
+                function ocultarTabla() { $('#contenedorTabla').hide(); $('#mensajeVacio').show(); table.search('').column(0).search('').draw(); }
 
                 table.on('draw', function() {
                     var body = $(table.table().body());
                     body.unmark();
-                    var searchVal = table.search();
-                    if(searchVal) {
-                        // Limpiamos los paréntesis del regex para el marcado visual
-                        var cleanMark = searchVal.replace(/[()]/g, '').split('|');
-                        cleanMark.forEach(word => { if(word.length > 2) body.mark(word); });
-                    }
+                    
+                    // Resaltar solo lo que está en los buscadores
+                    var v1 = $('#normalSearch').val();
+                    var v2 = $('#batchSearch').val().match(/\d{3,15}/g);
+                    
+                    if (v1 && v1.length > 2) body.mark(v1);
+                    if (v2) v2.forEach(w => body.mark(w));
                 });
             }
         });
