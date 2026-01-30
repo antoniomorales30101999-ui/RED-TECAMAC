@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RED TECAMAC - Sistema Dual</title>
+    <title>RED TECAMAC - Filtro 10 Dígitos</title>
 
     <script>
         var claveCorrecta = "Tecamac2026*";
@@ -38,18 +38,18 @@
 </div>
 
 <div class="control-panel">
-    <label class="section-title">🔍 Buscador Rápido (Cualquier dato):</label>
-    <input type="text" id="normalSearch" placeholder="OLT, QR, Puerto, Ubicación..." autocomplete="off">
+    <label class="section-title">🔍 Buscador Rápido (Global):</label>
+    <input type="text" id="normalSearch" placeholder="Cualquier dato..." autocomplete="off">
     
     <hr class="my-4">
 
-    <label class="section-title">📋 Extractor de Cuentas (Solo 10 dígitos):</label>
-    <textarea id="batchSearch" placeholder="Pega aquí textos de WhatsApp. Solo detectaremos números de 10 dígitos..."></textarea>
+    <label class="section-title">📋 Buscar Coincidencias de Cuentas (Exactamente 10 dígitos):</label>
+    <textarea id="batchSearch" placeholder="Pegue texto aquí. Solo se mostrarán coincidencias de 10 dígitos..."></textarea>
     <div id="statusInfo" class="badge-count mt-2" style="display:none;"></div>
 </div>
 
 <div id="mensajeVacio" class="text-center text-muted mt-5">
-    <p>Ingrese datos en los buscadores para filtrar la red.</p>
+    <p>Ingrese datos para mostrar resultados.</p>
 </div>
 
 <div id="contenedorTabla">
@@ -85,51 +85,50 @@
                     columnDefs: [{ type: 'natural', targets: 7 }],
                     order: [[7, 'asc']],
                     language: {
-                        "info": "Coincidencias: _TOTAL_",
+                        "info": "Mostrando _TOTAL_ coincidencias",
                         "paginate": { "next": "Sig", "previous": "Ant" }
                     }
                 });
 
-                // --- BUSCADOR RÁPIDO: BUSCA TODO (SIN LÍMITE DE DÍGITOS) ---
+                // BUSCADOR RÁPIDO (SIN RESTRICCIÓN)
                 $('#normalSearch').on('keyup input', function() {
                     $('#batchSearch').val(''); 
                     $('#statusInfo').hide();
                     var val = $(this).val().trim();
-                    
-                    if (val === "") {
-                        ocultarTabla();
-                    } else {
-                        mostrarTabla();
+                    if (val === "") { ocultarTabla(); } 
+                    else { 
+                        mostrarTabla(); 
                         table.column(0).search(''); // Limpia filtro de columna
-                        table.search(val).draw();   // Búsqueda global (OLT, QR, etc)
+                        table.search(val).draw(); 
                     }
                 });
 
-                // --- EXTRACTOR: SOLO CUENTAS DE 10 DÍGITOS ---
+                // EXTRACTOR DE CUENTAS (RESTRICCIÓN 10 DÍGITOS)
                 $('#batchSearch').on('input', function() {
                     $('#normalSearch').val('');
                     table.search(''); // Limpia búsqueda global
                     
                     var rawText = $(this).val();
-                    // Buscamos solo números que tengan exactamente 10 dígitos aislados
-                    var cuentasEncontradas = rawText.match(/\b\d{10}\b/g);
+                    // Detecta solo números de 10 dígitos en el texto pegado
+                    var encontrados = rawText.match(/\b\d{10}\b/g);
 
-                    if (cuentasEncontradas && rawText.trim() !== "") {
-                        var cuentasUnicas = [...new Set(cuentasEncontradas)];
-                        // Filtro para búsqueda exacta en columna 0
-                        var regexFiltro = "^(" + cuentasUnicas.join('|') + ")$";
+                    if (encontrados && rawText.trim() !== "") {
+                        var unicos = [...new Set(encontrados)];
+                        // Crea regex para buscar solo coincidencias exactas de 10 dígitos en la columna 0
+                        var regexFiltro = "^(" + unicos.join('|') + ")$";
                         
                         mostrarTabla();
-                        $('#statusInfo').show().text(cuentasUnicas.length + " cuentas de 10 dígitos detectadas");
+                        $('#statusInfo').show().text(unicos.length + " cuentas válidas detectadas");
                         
-                        // Busca exclusivamente en la columna Cuenta
+                        // Aplicamos búsqueda estricta en columna 'Cuenta'
                         table.column(0).search(regexFiltro, true, false).draw();
                     } else {
-                        if(rawText.trim() === "") {
-                            ocultarTabla();
+                        if(rawText.trim() === "") { 
+                            ocultarTabla(); 
                         } else {
-                            // Si pegó algo pero no son 10 dígitos, no muestra nada en la tabla
-                            table.column(0).search('NO_MATCH_FOR_RANDOM_TEXT').draw();
+                            // Si el texto no tiene números de 10 dígitos, vacía la tabla
+                            table.column(0).search('NO_VALOR_ENCONTRADO').draw();
+                            $('#statusInfo').show().text("No se detectaron cuentas de 10 dígitos");
                         }
                     }
                 });
@@ -144,11 +143,11 @@
                 table.on('draw', function() {
                     var body = $(table.table().body());
                     body.unmark();
-                    var vNormal = $('#normalSearch').val();
-                    var vBatch = $('#batchSearch').val().match(/\b\d{10}\b/g);
-                    
-                    if (vNormal && vNormal.length > 2) body.mark(vNormal);
-                    if (vBatch) vBatch.forEach(w => body.mark(w));
+                    var searchVal = table.column(0).search();
+                    if(searchVal) {
+                        var cleanMark = searchVal.replace(/[\^\$\(\)]/g, '').split('|');
+                        cleanMark.forEach(word => { if(word.length > 2) body.mark(word); });
+                    }
                 });
             }
         });
