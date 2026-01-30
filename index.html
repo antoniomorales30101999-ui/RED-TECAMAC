@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RED TECAMAC - Filtro Estricto</title>
+    <title>RED TECAMAC - Fix</title>
 
     <script>
         var claveCorrecta = "Tecamac2026*";
@@ -23,7 +23,7 @@
         .control-panel { max-width: 900px; margin: 0 auto 20px auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
         .section-title { font-weight: bold; color: #004a99; margin-bottom: 10px; display: block; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
         #normalSearch { width: 100%; border: 2px solid #004a99; border-radius: 50px; padding: 12px 25px; font-size: 1.1rem; outline: none; margin-bottom: 10px; }
-        #batchSearch { width: 100%; border: 2px dashed #cbd5e0; border-radius: 12px; padding: 12px; font-size: 0.9rem; transition: 0.3s; height: 80px; }
+        #batchSearch { width: 100%; border: 2px dashed #cbd5e0; border-radius: 12px; padding: 12px; font-size: 0.9rem; transition: 0.3s; height: 80px; resize: none; }
         #batchSearch:focus { border-color: #004a99; background: #f8fbff; outline: none; }
         #contenedorTabla { display: none; background: white; border-radius: 15px; padding: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         .table thead th { background-color: #f8f9fa !important; color: #004a99 !important; font-size: 0.75rem; border-bottom: 2px solid #dee2e6 !important; }
@@ -39,17 +39,17 @@
 
 <div class="control-panel">
     <label class="section-title">🔍 Buscador Rápido (Global):</label>
-    <input type="text" id="normalSearch" placeholder="Escriba OLT, QR, Ubicación..." autocomplete="off">
+    <input type="text" id="normalSearch" placeholder="OLT, QR, Ubicación..." autocomplete="off">
     
     <hr class="my-4">
 
-    <label class="section-title">📋 Buscar Coincidencias En Cuentas (Específico):</label>
-    <textarea id="batchSearch" placeholder="Pegue texto aquí. Solo buscará números en la columna 'Cuenta'..."></textarea>
+    <label class="section-title">📋 Buscar Coincidencias en Cuentas:</label>
+    <textarea id="batchSearch" placeholder="Pega texto aquí para extraer y buscar cuentas..."></textarea>
     <div id="statusInfo" class="badge-count mt-2" style="display:none;"></div>
 </div>
 
 <div id="mensajeVacio" class="text-center text-muted mt-5">
-    <p>Ingrese datos para mostrar registros.</p>
+    <p>Ingrese datos para filtrar la base de datos.</p>
 </div>
 
 <div id="contenedorTabla">
@@ -64,7 +64,7 @@
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
@@ -85,62 +85,64 @@
                     columnDefs: [{ type: 'natural', targets: 7 }],
                     order: [[7, 'asc']],
                     language: {
-                        "info": "Coincidencias: _TOTAL_",
+                        "info": "Registros: _TOTAL_",
                         "paginate": { "next": "Sig", "previous": "Ant" }
                     }
                 });
 
-                // BUSCADOR RÁPIDO (Busca en cualquier parte de la fila)
+                // BUSCADOR SUPERIOR (GLOBAL)
                 $('#normalSearch').on('keyup input', function() {
                     $('#batchSearch').val(''); 
                     $('#statusInfo').hide();
                     var val = $(this).val().trim();
-                    if (val === "") { 
-                        ocultarTabla(); 
-                    } else { 
-                        mostrarTabla(); 
-                        table.column(0).search(''); // Limpiamos el filtro por columna
-                        table.search(val).draw(); 
+                    
+                    if (val === "") {
+                        ocultarTabla();
+                    } else {
+                        mostrarTabla();
+                        table.column(0).search(''); // Limpia filtro de columna
+                        table.search(val).draw();
                     }
                 });
 
-                // BUSCADOR DE CUENTAS (Busca exclusivamente en la columna 0)
+                // BUSCADOR INFERIOR (SOLO CUENTAS)
                 $('#batchSearch').on('input', function() {
                     $('#normalSearch').val('');
-                    table.search(''); // Limpiamos la búsqueda global
+                    table.search(''); // Limpia búsqueda global
                     
                     var rawText = $(this).val();
-                    var cuentasEncontradas = rawText.match(/\d{3,15}/g);
+                    var numeros = rawText.match(/\d+/g); // Extrae cualquier número
 
-                    if (cuentasEncontradas && rawText.trim() !== "") {
-                        var cuentasUnicas = [...new Set(cuentasEncontradas)];
-                        // El ancla ^ y $ junto con el pipe | aseguran que busque el número exacto
-                        // Pero para mayor compatibilidad usamos una regex simple: (123|456|789)
-                        var regexFiltro = "^(" + cuentasUnicas.join('|') + ")$";
+                    if (numeros && rawText.trim() !== "") {
+                        var cuentasUnicas = [...new Set(numeros)];
+                        // Filtro simple: cuenta1|cuenta2|cuenta3
+                        var regexFiltro = cuentasUnicas.join('|');
                         
                         mostrarTabla();
                         $('#statusInfo').show().text(cuentasUnicas.length + " números detectados");
                         
-                        // FILTRO CLAVE: Se aplica solo a la columna 0 (Cuenta)
+                        // Buscamos solo en la columna 0. 'true' habilita Regex, 'false' deshabilita búsqueda exacta.
                         table.column(0).search(regexFiltro, true, false).draw();
                     } else {
-                        if(rawText.trim() === "") { ocultarTabla(); }
+                        if(rawText.trim() === "") ocultarTabla();
                     }
                 });
 
                 function mostrarTabla() { $('#contenedorTabla').show(); $('#mensajeVacio').hide(); }
-                function ocultarTabla() { $('#contenedorTabla').hide(); $('#mensajeVacio').show(); table.search('').column(0).search('').draw(); }
+                function ocultarTabla() { 
+                    $('#contenedorTabla').hide(); 
+                    $('#mensajeVacio').show(); 
+                    table.search('').column(0).search('').draw(); 
+                }
 
                 table.on('draw', function() {
                     var body = $(table.table().body());
                     body.unmark();
+                    var searchValNormal = $('#normalSearch').val();
+                    var searchValBatch = $('#batchSearch').val().match(/\d+/g);
                     
-                    // Resaltar solo lo que está en los buscadores
-                    var v1 = $('#normalSearch').val();
-                    var v2 = $('#batchSearch').val().match(/\d{3,15}/g);
-                    
-                    if (v1 && v1.length > 2) body.mark(v1);
-                    if (v2) v2.forEach(w => body.mark(w));
+                    if (searchValNormal && searchValNormal.length > 2) body.mark(searchValNormal);
+                    if (searchValBatch) searchValBatch.forEach(w => { if(w.length > 2) body.mark(w); });
                 });
             }
         });
