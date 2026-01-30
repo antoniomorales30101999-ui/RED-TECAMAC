@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RED TECAMAC</title>
+    <title>RED TECAMAC - Extractor</title>
 
     <script>
         var claveCorrecta = "Tecamac2026*";
@@ -19,26 +19,34 @@
     
     <style>
         body { background-color: #f4f7f6; color: #333; font-family: 'Segoe UI', sans-serif; padding: 15px; }
-        .app-header { background: linear-gradient(135deg, #004a99 0%, #002d5f 100%); color: white; padding: 25px; border-bottom-left-radius: 25px; border-bottom-right-radius: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 30px; text-align: center; }
-        .search-wrapper { max-width: 700px; margin: 0 auto 30px auto; }
-        #mainSearch { background: white; border: 2px solid #004a99; border-radius: 50px !important; padding: 18px 30px !important; width: 100% !important; font-size: 1.2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1); outline: none; }
-        #contenedorTabla { display: none; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        .table thead th { background-color: #f8f9fa !important; color: #004a99 !important; text-transform: uppercase; font-size: 0.75rem; border-bottom: 2px solid #dee2e6 !important; }
-        mark { background: #fff3cd !important; color: #856404 !important; font-weight: bold; border-radius: 2px; }
+        .app-header { background: linear-gradient(135deg, #004a99 0%, #002d5f 100%); color: white; padding: 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; margin-bottom: 20px; text-align: center; }
+        
+        .search-container { max-width: 800px; margin: 0 auto 20px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .search-label { font-weight: bold; color: #004a99; margin-bottom: 10px; display: block; }
+        
+        #batchSearch { width: 100%; border: 2px dashed #ccc; border-radius: 10px; padding: 10px; font-size: 0.9rem; transition: all 0.3s; }
+        #batchSearch:focus { border-color: #004a99; outline: none; background: #f0f7ff; }
+
+        #contenedorTabla { display: none; background: white; border-radius: 15px; padding: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .table thead th { background-color: #f8f9fa !important; color: #004a99 !important; font-size: 0.75rem; border-bottom: 2px solid #dee2e6 !important; }
+        mark { background: #fff3cd !important; font-weight: bold; }
+        .count-badge { background: #004a99; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
 <div class="app-header">
-    <h1>🛰️ SISTEMA CORE TECAMAC</h1>
+    <h3>🛰️ SISTEMA CORE TECAMAC</h3>
 </div>
 
-<div class="search-wrapper">
-    <input type="text" id="mainSearch" placeholder="🔍 Buscar por Cuenta, QR u OLT..." autocomplete="off">
+<div class="search-container">
+    <label class="search-label">📋 Pegar texto para extraer cuentas y buscar coincidencias:</label>
+    <textarea id="batchSearch" rows="3" placeholder="Pegue aquí el texto con las cuentas mezcladas..."></textarea>
+    <div id="statusInfo" class="mt-2 small text-muted"></div>
 </div>
 
 <div id="mensajeVacio" class="text-center text-muted mt-5">
-    <p>Esperando búsqueda...</p>
+    <p>El sistema mostrará coincidencias automáticamente al detectar números en el texto.</p>
 </div>
 
 <div id="contenedorTabla">
@@ -69,47 +77,51 @@
             complete: function(results) {
                 table = $('#tablaMaestra').DataTable({
                     data: results.data,
-                    deferRender: true,
-                    scrollY: "50vh",
-                    scrollCollapse: true,
                     dom: 'rtip',
-                    // CONFIGURACIÓN DE LÍMITE Y ORDEN
-                    pageLength: 20,      // Muestra máximo 20 registros
-                    lengthChange: false, // Oculta el selector de cantidad de registros
-                    columnDefs: [
-                        { type: 'natural', targets: 7 } // Orden inteligente para puertos
-                    ],
-                    order: [[7, 'asc']], // Inicia ordenado por columna Puerto (7)
+                    pageLength: 20,
+                    columnDefs: [{ type: 'natural', targets: 7 }],
+                    order: [[7, 'asc']],
                     language: {
-                        "info": "Mostrando _TOTAL_ registros",
-                        "paginate": { "next": "Sig", "previous": "Ant" },
-                        "zeroRecords": "No hay coincidencias"
+                        "info": "Mostrando _TOTAL_ resultados encontrados",
+                        "paginate": { "next": "Sig", "previous": "Ant" }
                     }
                 });
 
-                $('#mainSearch').on('keyup input', function() {
-                    var val = $(this).val().trim();
-                    if (val.length < 1) {
+                $('#batchSearch').on('input', function() {
+                    var rawText = $(this).val();
+                    
+                    // EXTRACCIÓN: Busca secuencias de números (de 5 a 12 dígitos por ejemplo)
+                    // Ajusta el {5,12} según el largo real de tus números de cuenta
+                    var cuentasEncontradas = rawText.match(/\d{5,12}/g);
+
+                    if (!cuentasEncontradas || rawText.trim() === "") {
                         $('#contenedorTabla').hide();
                         $('#mensajeVacio').show();
+                        $('#statusInfo').html("");
                         table.search('').draw();
                     } else {
+                        // Eliminar duplicados detectados en el texto
+                        var cuentasUnicas = [...new Set(cuentasEncontradas)];
+                        
+                        // Crear filtro para DataTables (formato: Cuenta1|Cuenta2|Cuenta3)
+                        var filtroRegex = cuentasUnicas.join('|');
+                        
                         $('#contenedorTabla').show();
                         $('#mensajeVacio').hide();
-                        
-                        // Busca y fuerza que el resultado se mantenga en orden de puerto
-                        table.search(val).order([7, 'asc']).draw();
+                        $('#statusInfo').html("Se detectaron <span class='count-badge'>" + cuentasUnicas.length + "</span> cuentas únicas.");
+
+                        // Aplicamos búsqueda por regex solo en la columna 0 (Cuenta)
+                        table.column(0).search(filtroRegex, true, false).draw();
                     }
                 });
 
+                // Resaltado de coincidencias
                 table.on('draw', function() {
                     var body = $(table.table().body());
                     body.unmark();
-                    var searchVal = table.search();
+                    var searchVal = $('#batchSearch').val().match(/\d{5,12}/g);
                     if(searchVal) {
-                        searchVal.split(' ').forEach(word => { 
-                            if(word.length > 2) body.mark(word); 
-                        });
+                        searchVal.forEach(word => body.mark(word));
                     }
                 });
             }
