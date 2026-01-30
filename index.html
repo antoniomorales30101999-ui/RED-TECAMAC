@@ -23,7 +23,7 @@
         .control-panel { max-width: 900px; margin: 0 auto 20px auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
         .section-title { font-weight: bold; color: #004a99; margin-bottom: 10px; display: block; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
         #normalSearch { width: 100%; border: 2px solid #004a99; border-radius: 50px; padding: 12px 25px; font-size: 1.1rem; outline: none; margin-bottom: 10px; }
-        #batchSearch { width: 100%; border: 2px dashed #cbd5e0; border-radius: 12px; padding: 12px; font-size: 0.9rem; transition: 0.3s; height: 80px; }
+        #batchSearch { width: 100%; border: 2px dashed #cbd5e0; border-radius: 12px; padding: 12px; font-size: 0.9rem; transition: 0.3s; height: 80px; resize: none; }
         #batchSearch:focus { border-color: #004a99; background: #f8fbff; outline: none; }
         #contenedorTabla { display: none; background: white; border-radius: 15px; padding: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         .table thead th { background-color: #f8f9fa !important; color: #004a99 !important; font-size: 0.75rem; border-bottom: 2px solid #dee2e6 !important; }
@@ -38,18 +38,18 @@
 </div>
 
 <div class="control-panel">
-    <label class="section-title">🔍 Buscador Rápido:</label>
-    <input type="text" id="normalSearch" placeholder="Escriba OLT, QR, Ubicación..." autocomplete="off">
+    <label class="section-title">🔍 Buscador Rápido (Cualquier dato):</label>
+    <input type="text" id="normalSearch" placeholder="OLT, QR, Puerto, Ubicación..." autocomplete="off">
     
     <hr class="my-4">
 
-    <label class="section-title">📋 Buscar Coincidencias de Cuentas:</label>
-    <textarea id="batchSearch" placeholder="Pegue texto aquí. Extraeremos los números automáticamente..."></textarea>
+    <label class="section-title">📋 Extractor de Cuentas (Solo 10 dígitos):</label>
+    <textarea id="batchSearch" placeholder="Pega aquí textos de WhatsApp. Solo detectaremos números de 10 dígitos..."></textarea>
     <div id="statusInfo" class="badge-count mt-2" style="display:none;"></div>
 </div>
 
 <div id="mensajeVacio" class="text-center text-muted mt-5">
-    <p>Ingrese datos para mostrar registros.</p>
+    <p>Ingrese datos en los buscadores para filtrar la red.</p>
 </div>
 
 <div id="contenedorTabla">
@@ -90,49 +90,65 @@
                     }
                 });
 
-                // BUSCADOR NORMAL
+                // --- BUSCADOR RÁPIDO: BUSCA TODO (SIN LÍMITE DE DÍGITOS) ---
                 $('#normalSearch').on('keyup input', function() {
                     $('#batchSearch').val(''); 
                     $('#statusInfo').hide();
                     var val = $(this).val().trim();
-                    if (val === "") { ocultarTabla(); } 
-                    else { mostrarTabla(); table.search(val).draw(); }
+                    
+                    if (val === "") {
+                        ocultarTabla();
+                    } else {
+                        mostrarTabla();
+                        table.column(0).search(''); // Limpia filtro de columna
+                        table.search(val).draw();   // Búsqueda global (OLT, QR, etc)
+                    }
                 });
 
-                // BUSCADOR POR LOTE (EXTRACTOR) - CORREGIDO
+                // --- EXTRACTOR: SOLO CUENTAS DE 10 DÍGITOS ---
                 $('#batchSearch').on('input', function() {
                     $('#normalSearch').val('');
+                    table.search(''); // Limpia búsqueda global
+                    
                     var rawText = $(this).val();
-                    // Detecta números de 3 a 15 dígitos
-                    var cuentasEncontradas = rawText.match(/\d{3,15}/g);
+                    // Buscamos solo números que tengan exactamente 10 dígitos aislados
+                    var cuentasEncontradas = rawText.match(/\b\d{10}\b/g);
 
                     if (cuentasEncontradas && rawText.trim() !== "") {
                         var cuentasUnicas = [...new Set(cuentasEncontradas)];
-                        // Crea el filtro: (Cuenta1|Cuenta2|Cuenta3)
-                        var regexFiltro = "(" + cuentasUnicas.join('|') + ")";
+                        // Filtro para búsqueda exacta en columna 0
+                        var regexFiltro = "^(" + cuentasUnicas.join('|') + ")$";
                         
                         mostrarTabla();
-                        $('#statusInfo').show().text(cuentasUnicas.length + " números detectados");
+                        $('#statusInfo').show().text(cuentasUnicas.length + " cuentas de 10 dígitos detectadas");
                         
-                        // Buscamos de forma global usando Regex para que encuentre cualquiera de los números
-                        table.search(regexFiltro, true, false).draw();
+                        // Busca exclusivamente en la columna Cuenta
+                        table.column(0).search(regexFiltro, true, false).draw();
                     } else {
-                        if(rawText.trim() === "") { ocultarTabla(); }
+                        if(rawText.trim() === "") {
+                            ocultarTabla();
+                        } else {
+                            // Si pegó algo pero no son 10 dígitos, no muestra nada en la tabla
+                            table.column(0).search('NO_MATCH_FOR_RANDOM_TEXT').draw();
+                        }
                     }
                 });
 
                 function mostrarTabla() { $('#contenedorTabla').show(); $('#mensajeVacio').hide(); }
-                function ocultarTabla() { $('#contenedorTabla').hide(); $('#mensajeVacio').show(); table.search('').draw(); }
+                function ocultarTabla() { 
+                    $('#contenedorTabla').hide(); 
+                    $('#mensajeVacio').show(); 
+                    table.search('').column(0).search('').draw(); 
+                }
 
                 table.on('draw', function() {
                     var body = $(table.table().body());
                     body.unmark();
-                    var searchVal = table.search();
-                    if(searchVal) {
-                        // Limpiamos los paréntesis del regex para el marcado visual
-                        var cleanMark = searchVal.replace(/[()]/g, '').split('|');
-                        cleanMark.forEach(word => { if(word.length > 2) body.mark(word); });
-                    }
+                    var vNormal = $('#normalSearch').val();
+                    var vBatch = $('#batchSearch').val().match(/\b\d{10}\b/g);
+                    
+                    if (vNormal && vNormal.length > 2) body.mark(vNormal);
+                    if (vBatch) vBatch.forEach(w => body.mark(w));
                 });
             }
         });
