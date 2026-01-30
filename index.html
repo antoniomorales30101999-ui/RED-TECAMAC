@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RED TECAMAC - Extractor</title>
+    <title>RED TECAMAC - Sistema Dual</title>
 
     <script>
         var claveCorrecta = "Tecamac2026*";
@@ -21,16 +21,20 @@
         body { background-color: #f4f7f6; color: #333; font-family: 'Segoe UI', sans-serif; padding: 15px; }
         .app-header { background: linear-gradient(135deg, #004a99 0%, #002d5f 100%); color: white; padding: 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; margin-bottom: 20px; text-align: center; }
         
-        .search-container { max-width: 800px; margin: 0 auto 20px auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .search-label { font-weight: bold; color: #004a99; margin-bottom: 10px; display: block; }
+        .control-panel { max-width: 900px; margin: 0 auto 20px auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); }
+        .section-title { font-weight: bold; color: #004a99; margin-bottom: 10px; display: block; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
         
-        #batchSearch { width: 100%; border: 2px dashed #ccc; border-radius: 10px; padding: 10px; font-size: 0.9rem; transition: all 0.3s; }
-        #batchSearch:focus { border-color: #004a99; outline: none; background: #f0f7ff; }
-
+        /* Buscador Normal (Ahora Arriba) */
+        #normalSearch { width: 100%; border: 2px solid #004a99; border-radius: 50px; padding: 12px 25px; font-size: 1.1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); outline: none; margin-bottom: 10px; }
+        
+        /* Buscador Lote (Ahora Abajo) */
+        #batchSearch { width: 100%; border: 2px dashed #cbd5e0; border-radius: 12px; padding: 12px; font-size: 0.9rem; transition: 0.3s; }
+        #batchSearch:focus { border-color: #004a99; background: #f8fbff; outline: none; }
+        
         #contenedorTabla { display: none; background: white; border-radius: 15px; padding: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
         .table thead th { background-color: #f8f9fa !important; color: #004a99 !important; font-size: 0.75rem; border-bottom: 2px solid #dee2e6 !important; }
-        mark { background: #fff3cd !important; font-weight: bold; }
-        .count-badge { background: #004a99; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; }
+        mark { background: #fff3cd !important; color: #856404 !important; font-weight: bold; }
+        .badge-count { background: #004a99; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; display: inline-block; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -39,14 +43,19 @@
     <h3>🛰️ SISTEMA CORE TECAMAC</h3>
 </div>
 
-<div class="search-container">
-    <label class="search-label">📋 Pegar texto para extraer cuentas y buscar coincidencias:</label>
-    <textarea id="batchSearch" rows="3" placeholder="Pegue aquí el texto con las cuentas mezcladas..."></textarea>
-    <div id="statusInfo" class="mt-2 small text-muted"></div>
+<div class="control-panel">
+    <label class="section-title">🔍 Buscador Rápido (OLT, QR, Calle...):</label>
+    <input type="text" id="normalSearch" placeholder="Escriba cualquier dato para buscar..." autocomplete="off">
+    
+    <hr class="my-4">
+
+    <label class="section-title">📋 Extractor de Cuentas (Pegar coincidencias de texto):</label>
+    <textarea id="batchSearch" rows="2" placeholder="Pegue aquí textos de WhatsApp o listas de cuentas..."></textarea>
+    <div id="statusInfo" class="badge-count mt-2" style="display:none;"></div>
 </div>
 
 <div id="mensajeVacio" class="text-center text-muted mt-5">
-    <p>El sistema mostrará coincidencias automáticamente al detectar números en el texto.</p>
+    <p>Utilice los buscadores superiores para filtrar los registros de la red.</p>
 </div>
 
 <div id="contenedorTabla">
@@ -82,47 +91,54 @@
                     columnDefs: [{ type: 'natural', targets: 7 }],
                     order: [[7, 'asc']],
                     language: {
-                        "info": "Mostrando _TOTAL_ resultados encontrados",
+                        "info": "Coincidencias encontradas: _TOTAL_",
                         "paginate": { "next": "Sig", "previous": "Ant" }
                     }
                 });
 
-                $('#batchSearch').on('input', function() {
-                    var rawText = $(this).val();
-                    
-                    // EXTRACCIÓN: Busca secuencias de números (de 5 a 12 dígitos por ejemplo)
-                    // Ajusta el {5,12} según el largo real de tus números de cuenta
-                    var cuentasEncontradas = rawText.match(/\d{5,12}/g);
-
-                    if (!cuentasEncontradas || rawText.trim() === "") {
-                        $('#contenedorTabla').hide();
-                        $('#mensajeVacio').show();
-                        $('#statusInfo').html("");
-                        table.search('').draw();
+                // LÓGICA BUSCADOR NORMAL (ARRIBA)
+                $('#normalSearch').on('keyup input', function() {
+                    $('#batchSearch').val(''); // Limpia el otro buscador
+                    $('#statusInfo').hide();
+                    var val = $(this).val().trim();
+                    if (val === "") {
+                        ocultarTabla();
                     } else {
-                        // Eliminar duplicados detectados en el texto
-                        var cuentasUnicas = [...new Set(cuentasEncontradas)];
-                        
-                        // Crear filtro para DataTables (formato: Cuenta1|Cuenta2|Cuenta3)
-                        var filtroRegex = cuentasUnicas.join('|');
-                        
-                        $('#contenedorTabla').show();
-                        $('#mensajeVacio').hide();
-                        $('#statusInfo').html("Se detectaron <span class='count-badge'>" + cuentasUnicas.length + "</span> cuentas únicas.");
-
-                        // Aplicamos búsqueda por regex solo en la columna 0 (Cuenta)
-                        table.column(0).search(filtroRegex, true, false).draw();
+                        mostrarTabla();
+                        table.column(0).search(''); // Limpia filtro de columna
+                        table.search(val).draw();
                     }
                 });
 
-                // Resaltado de coincidencias
+                // LÓGICA EXTRACTOR (ABAJO)
+                $('#batchSearch').on('input', function() {
+                    $('#normalSearch').val(''); // Limpia el otro buscador
+                    var rawText = $(this).val();
+                    var cuentas = rawText.match(/\d{5,12}/g);
+
+                    if (cuentas) {
+                        var cuentasUnicas = [...new Set(cuentas)];
+                        var regexFiltro = cuentasUnicas.join('|');
+                        mostrarTabla();
+                        $('#statusInfo').show().text(cuentasUnicas.length + " cuentas extraídas");
+                        table.column(0).search(regexFiltro, true, false).draw();
+                    } else {
+                        ocultarTabla();
+                        table.search('').columns().search('').draw();
+                    }
+                });
+
+                function mostrarTabla() { $('#contenedorTabla').show(); $('#mensajeVacio').hide(); }
+                function ocultarTabla() { $('#contenedorTabla').hide(); $('#mensajeVacio').show(); table.search('').columns().search('').draw(); }
+
+                // MARCADOR DE TEXTO
                 table.on('draw', function() {
                     var body = $(table.table().body());
                     body.unmark();
-                    var searchVal = $('#batchSearch').val().match(/\d{5,12}/g);
-                    if(searchVal) {
-                        searchVal.forEach(word => body.mark(word));
-                    }
+                    var v1 = $('#normalSearch').val();
+                    var v2 = $('#batchSearch').val().match(/\d{5,12}/g);
+                    if (v1 && v1.length > 2) body.mark(v1);
+                    if (v2) v2.forEach(w => body.mark(w));
                 });
             }
         });
