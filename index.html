@@ -3,19 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RED TECAMAC - Sistema Core</title>
+    <title>RED TECAMAC</title>
 
     <script>
-        // Seguridad básica de acceso
         var claveCorrecta = "Tecamac2026*";
         if (sessionStorage.getItem("acceso_permitido") !== "true") {
-            var intento = prompt("🔐 ACCESO RESTRINGIDO\nIngrese clave de seguridad:");
-            if (intento === claveCorrecta) { 
-                sessionStorage.setItem("acceso_permitido", "true"); 
-            } else { 
-                alert("Acceso denegado");
-                window.location.href = "https://google.com"; 
-            }
+            var intento = prompt("🔐 ACCESO\nIngrese clave:");
+            if (intento === claveCorrecta) { sessionStorage.setItem("acceso_permitido", "true"); }
+            else { window.location.href = "https://google.com"; }
         }
     </script>
 
@@ -39,25 +34,19 @@
 </div>
 
 <div class="search-wrapper">
-    <input type="text" id="mainSearch" placeholder="🔍 Escriba para buscar (Cuenta, QR, OLT)..." autocomplete="off">
+    <input type="text" id="mainSearch" placeholder="🔍 Buscar cuenta, QR u OLT..." autocomplete="off">
 </div>
 
 <div id="mensajeVacio" class="text-center text-muted mt-5">
-    <p>Esperando búsqueda para mostrar resultados...</p>
+    <p>Esperando búsqueda...</p>
 </div>
 
 <div id="contenedorTabla">
     <table id="tablaMaestra" class="table table-hover w-100">
         <thead>
             <tr>
-                <th>Cuenta</th>
-                <th>QR</th>
-                <th>OLT</th>
-                <th>FSP</th>
-                <th>Lat</th>
-                <th>Lon</th>
-                <th>Ubicación</th>
-                <th>Puerto</th>
+                <th>Cuenta</th><th>QR</th><th>OLT</th><th>FSP</th>
+                <th>Lat</th><th>Lon</th><th>Ubicación</th><th>Puerto</th>
             </tr>
         </thead>
     </table>
@@ -69,40 +58,36 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
 
+<script src="https://cdn.datatables.net/plug-ins/1.13.6/sorting/natural.js"></script>
+
 <script>
     var table;
-
     $(document).ready(function() {
-        // Carga de datos desde CSV
         Papa.parse("datos.csv", {
             download: true,
             header: false,
             skipEmptyLines: true,
             complete: function(results) {
-                // Inicializar DataTable
                 table = $('#tablaMaestra').DataTable({
                     data: results.data,
                     deferRender: true,
                     scrollY: "55vh",
                     scrollCollapse: true,
                     dom: 'rtip',
-                    // MODIFICACIÓN CLAVE: Orden ascendente por la columna 7 (Puerto)
+                    // Configuración de columnas
+                    columnDefs: [
+                        { type: 'natural', targets: 7 } // Aplica orden natural a la columna Puerto
+                    ],
+                    // Orden inicial por Puerto (columna 7) ascendente
                     order: [[7, 'asc']], 
                     language: {
                         "info": "Mostrando _TOTAL_ registros",
-                        "paginate": { "next": "Sig", "previous": "Ant" },
-                        "zeroRecords": "No se encontraron resultados"
-                    },
-                    // Aseguramos que la columna Puerto sea tratada como número si es posible
-                    columnDefs: [
-                        { targets: 7, type: 'natural' } 
-                    ]
+                        "paginate": { "next": "Sig", "previous": "Ant" }
+                    }
                 });
 
-                // Lógica del Buscador
                 $('#mainSearch').on('keyup input', function() {
                     var val = $(this).val().trim();
-                    
                     if (val.length < 1) {
                         $('#contenedorTabla').hide();
                         $('#mensajeVacio').show();
@@ -111,12 +96,11 @@
                         $('#contenedorTabla').show();
                         $('#mensajeVacio').hide();
                         
-                        // Al buscar, forzamos que el resultado siga ordenado por Puerto
+                        // Buscamos y forzamos el orden por puerto cada vez que se filtra
                         table.search(val).order([7, 'asc']).draw();
                     }
                 });
 
-                // Resaltado de texto al dibujar la tabla
                 table.on('draw', function() {
                     var body = $(table.table().body());
                     body.unmark();
