@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RED TECAMAC</title>
+    <title>RED TECAMAC - Análisis de Afectaciones</title>
 
     <script>
         var claveCorrecta = "Tecamac2026*";
@@ -16,106 +17,751 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    
+
     <style>
-        body { background-color: #f4f7f6; color: #333; font-family: 'Segoe UI', sans-serif; padding: 15px; }
-        .app-header { background: linear-gradient(135deg, #004a99 0%, #002d5f 100%); color: white; padding: 25px; border-bottom-left-radius: 25px; border-bottom-right-radius: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 30px; text-align: center; }
-        .search-wrapper { max-width: 700px; margin: 0 auto 30px auto; }
-        #mainSearch { background: white; border: 2px solid #004a99; border-radius: 50px !important; padding: 18px 30px !important; width: 100% !important; font-size: 1.2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1); outline: none; }
-        #contenedorTabla { display: none; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-        .table thead th { background-color: #f8f9fa !important; color: #004a99 !important; text-transform: uppercase; font-size: 0.75rem; border-bottom: 2px solid #dee2e6 !important; }
-        mark { background: #fff3cd !important; color: #856404 !important; font-weight: bold; border-radius: 2px; }
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #e8e8e8;
+            font-family: 'Segoe UI', sans-serif;
+            padding: 0;
+            margin: 0;
+        }
+
+        .app-header {
+            background: linear-gradient(135deg, #00d4ff 0%, #0077b6 50%, #004a99 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 4px 30px rgba(0, 212, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .app-header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .app-header p {
+            opacity: 0.9;
+            font-size: 1rem;
+            margin-top: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        /* Tabs de navegación */
+        .nav-tabs-custom {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            color: #ccc;
+            padding: 15px 35px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+            border-color: #00d4ff;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #00d4ff, #0077b6);
+            border-color: #00d4ff;
+            color: white;
+            box-shadow: 0 5px 25px rgba(0, 212, 255, 0.4);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Panel de búsqueda individual */
+        .search-wrapper {
+            max-width: 700px;
+            margin: 0 auto 30px auto;
+        }
+
+        #mainSearch {
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            border-radius: 50px !important;
+            padding: 20px 30px !important;
+            width: 100% !important;
+            font-size: 1.1rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            outline: none;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+
+        #mainSearch:focus {
+            box-shadow: 0 10px 50px rgba(0, 212, 255, 0.5);
+            transform: scale(1.02);
+        }
+
+        #mainSearch::placeholder {
+            color: #888;
+        }
+
+        /* Panel de análisis masivo */
+        .analysis-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .paste-area {
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px dashed rgba(0, 212, 255, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 200px;
+            color: #ccc;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
+            resize: vertical;
+            width: 100%;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .paste-area:focus {
+            border-color: #00d4ff;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .paste-area::placeholder {
+            color: #666;
+        }
+
+        .btn-analyze {
+            background: linear-gradient(135deg, #00d4ff, #0077b6);
+            border: none;
+            color: white;
+            padding: 15px 50px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            box-shadow: 0 5px 25px rgba(0, 212, 255, 0.4);
+        }
+
+        .btn-analyze:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 35px rgba(0, 212, 255, 0.6);
+        }
+
+        .btn-clear {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: #ccc;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            margin-left: 10px;
+        }
+
+        .btn-clear:hover {
+            background: rgba(255, 82, 82, 0.2);
+            border-color: #ff5252;
+            color: #ff5252;
+        }
+
+        /* Resultados */
+        .results-panel {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results-panel.visible {
+            display: block;
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .stat-card .number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00d4ff, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-card .label {
+            color: #aaa;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Tabla de resultados */
+        #contenedorTabla,
+        #contenedorResultados {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            color: #333;
+        }
+
+        .table {
+            color: #333 !important;
+            margin-bottom: 0;
+        }
+
+        .table thead th {
+            background: linear-gradient(135deg, #004a99, #0077b6) !important;
+            color: white !important;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            border: none !important;
+            padding: 15px 12px !important;
+        }
+
+        .table tbody td {
+            padding: 12px !important;
+            vertical-align: middle;
+            border-color: #eee !important;
+        }
+
+        .table tbody tr:hover {
+            background-color: rgba(0, 212, 255, 0.1) !important;
+        }
+
+        /* Badge para QR repetidos */
+        .qr-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .qr-hot {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+
+        .qr-warm {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            color: #333;
+        }
+
+        .qr-normal {
+            background: rgba(0, 119, 182, 0.15);
+            color: #0077b6;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.5);
+            }
+
+            50% {
+                box-shadow: 0 0 0 10px rgba(255, 65, 108, 0);
+            }
+        }
+
+        .not-found {
+            background: rgba(255, 82, 82, 0.1) !important;
+            color: #ff5252 !important;
+        }
+
+        .not-found td {
+            color: #ff5252 !important;
+        }
+
+        mark {
+            background: linear-gradient(135deg, #fff3cd, #ffe066) !important;
+            color: #333 !important;
+            font-weight: bold;
+            border-radius: 3px;
+            padding: 2px 4px;
+        }
+
+        #mensajeVacio {
+            color: #888;
+        }
+
+        .highlight-row {
+            background: rgba(0, 212, 255, 0.1) !important;
+        }
+
+        /* Footer info */
+        .footer-info {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #0077b6;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00d4ff;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .app-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .tab-btn {
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+
+            .stats-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
     </style>
 </head>
+
 <body>
 
-<div class="app-header">
-    <h1>🛰️ SISTEMA CORE TECAMAC</h1>
-</div>
+    <div class="app-header">
+        <h1>🛰️ SISTEMA CORE TECAMAC</h1>
+        <p>Análisis de Red y Afectaciones Masivas</p>
+    </div>
 
-<div class="search-wrapper">
-    <input type="text" id="mainSearch" placeholder="🔍 Buscar por Cuenta, QR u OLT..." autocomplete="off">
-</div>
+    <div class="main-container">
 
-<div id="mensajeVacio" class="text-center text-muted mt-5">
-    <p>Esperando búsqueda...</p>
-</div>
+        <!-- Tabs de navegación -->
+        <div class="nav-tabs-custom">
+            <button class="tab-btn active" data-tab="busqueda">🔍 Búsqueda Individual</button>
+            <button class="tab-btn" data-tab="analisis">📊 Análisis Masivo</button>
+        </div>
 
-<div id="contenedorTabla">
-    <table id="tablaMaestra" class="table table-hover w-100">
-        <thead>
-            <tr>
-                <th>Cuenta</th><th>QR</th><th>OLT</th><th>FSP</th>
-                <th>Lat</th><th>Lon</th><th>Ubicación</th><th>Puerto</th>
-            </tr>
-        </thead>
-    </table>
-</div>
+        <!-- Tab: Búsqueda Individual -->
+        <div id="tab-busqueda" class="tab-content active">
+            <div class="search-wrapper">
+                <input type="text" id="mainSearch" placeholder="🔍 Buscar por Cuenta, QR u OLT..." autocomplete="off">
+            </div>
 
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
-<script src="https://cdn.datatables.net/plug-ins/1.13.6/sorting/natural.js"></script>
+            <div id="mensajeVacio" class="text-center mt-5">
+                <p style="font-size: 3rem; margin-bottom: 10px;">📡</p>
+                <p>Ingresa un término de búsqueda...</p>
+            </div>
 
-<script>
-    var table;
-    $(document).ready(function() {
-        Papa.parse("datos.csv", {
-            download: true,
-            header: false,
-            skipEmptyLines: true,
-            complete: function(results) {
-                table = $('#tablaMaestra').DataTable({
-                    data: results.data,
-                    deferRender: true,
-                    scrollY: "50vh",
-                    scrollCollapse: true,
-                    dom: 'rtip',
-                    // CONFIGURACIÓN DE LÍMITE Y ORDEN
-                    pageLength: 20,      // Muestra máximo 20 registros
-                    lengthChange: false, // Oculta el selector de cantidad de registros
-                    columnDefs: [
-                        { type: 'natural', targets: 7 } // Orden inteligente para puertos
-                    ],
-                    order: [[7, 'asc']], // Inicia ordenado por columna Puerto (7)
-                    language: {
-                        "info": "Mostrando _TOTAL_ registros",
-                        "paginate": { "next": "Sig", "previous": "Ant" },
-                        "zeroRecords": "No hay coincidencias"
-                    }
-                });
+            <div id="contenedorTabla" style="display: none;">
+                <table id="tablaMaestra" class="table table-hover w-100">
+                    <thead>
+                        <tr>
+                            <th>Cuenta</th>
+                            <th>QR</th>
+                            <th>OLT</th>
+                            <th>FSP</th>
+                            <th>Lat</th>
+                            <th>Lon</th>
+                            <th>Ubicación</th>
+                            <th>Puerto N2</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
 
-                $('#mainSearch').on('keyup input', function() {
-                    var val = $(this).val().trim();
-                    if (val.length < 1) {
-                        $('#contenedorTabla').hide();
-                        $('#mensajeVacio').show();
-                        table.search('').draw();
-                    } else {
-                        $('#contenedorTabla').show();
-                        $('#mensajeVacio').hide();
-                        
-                        // Busca y fuerza que el resultado se mantenga en orden de puerto
-                        table.search(val).order([7, 'asc']).draw();
-                    }
-                });
+        <!-- Tab: Análisis Masivo -->
+        <div id="tab-analisis" class="tab-content">
+            <div class="analysis-panel">
+                <h4 style="color: #00d4ff; margin-bottom: 20px;">📋 Pegar datos del OLT</h4>
+                <p style="color: #888; margin-bottom: 15px;">
+                    Copia y pega los datos de clientes desde el sistema de gestión. El sistema extraerá automáticamente
+                    los números de cuenta.
+                </p>
+                <textarea id="pasteArea" class="paste-area" placeholder="Pega aquí los datos del OLT...
 
-                table.on('draw', function() {
-                    var body = $(table.table().body());
-                    body.unmark();
-                    var searchVal = table.search();
-                    if(searchVal) {
-                        searchVal.split(' ').forEach(word => { 
-                            if(word.length > 2) body.mark(word); 
-                        });
-                    }
-                });
-            }
+Ejemplo:
+Activated (Online)	0	12	9	0	0105058933_TP_ANGEL_SHITAN...
+Activated (Online)	0	12	9	1	0101290103_TP_LUIS_ENRIQUE...
+..."></textarea>
+                <div class="text-center">
+                    <button class="btn-analyze" onclick="analizarDatos()">🔎 Analizar Afectación</button>
+                    <button class="btn-clear" onclick="limpiarAnalisis()">🗑️ Limpiar</button>
+                </div>
+            </div>
+
+            <div id="resultadosAnalisis" class="results-panel">
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <div class="number" id="statTotal">0</div>
+                        <div class="label">Clientes Analizados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number" id="statEncontrados">0</div>
+                        <div class="label">Encontrados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number" id="statNoEncontrados">0</div>
+                        <div class="label">No Encontrados</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number" id="statQRs">0</div>
+                        <div class="label">QRs Afectados</div>
+                    </div>
+                </div>
+
+                <div id="contenedorResultados">
+                    <table id="tablaResultados" class="table table-hover w-100">
+                        <thead>
+                            <tr>
+                                <th>Cuenta</th>
+                                <th>QR</th>
+                                <th>OLT</th>
+                                <th>FSP</th>
+                                <th>Ubicación</th>
+                                <th>Puerto N2</th>
+                                <th>Clientes en QR</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bodyResultados"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="footer-info">
+        Sistema Core Tecamac | Datos cargados: <span id="totalRegistros">0</span> registros
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.13.6/sorting/natural.js"></script>
+
+    <script>
+        var table;
+        var datosCSV = [];
+        var datosIndexados = {}; // Índice por cuenta para búsqueda rápida
+
+        $(document).ready(function () {
+            // Tabs
+            $('.tab-btn').on('click', function () {
+                var tabId = $(this).data('tab');
+                $('.tab-btn').removeClass('active');
+                $(this).addClass('active');
+                $('.tab-content').removeClass('active');
+                $('#tab-' + tabId).addClass('active');
+            });
+
+            // Cargar CSV
+            Papa.parse("datos.csv", {
+                download: true,
+                header: false,
+                skipEmptyLines: true,
+                complete: function (results) {
+                    datosCSV = results.data.slice(1); // Quitar header
+                    $('#totalRegistros').text(datosCSV.length.toLocaleString());
+
+                    // Indexar por cuenta para búsqueda O(1)
+                    // Limpiar cuentas: quitar apóstrofes y caracteres no numéricos
+                    datosCSV.forEach(function (row) {
+                        if (row[0]) {
+                            var cuentaLimpia = row[0].replace(/[^0-9]/g, '').trim();
+                            datosIndexados[cuentaLimpia] = row;
+                            // También guardar la original por si acaso
+                            datosIndexados[row[0].trim()] = row;
+                        }
+                    });
+
+                    // DataTable para búsqueda individual
+                    table = $('#tablaMaestra').DataTable({
+                        data: datosCSV,
+                        deferRender: true,
+                        scrollY: "50vh",
+                        scrollCollapse: true,
+                        dom: 'rtip',
+                        pageLength: 25,
+                        lengthChange: false,
+                        columnDefs: [{ type: 'natural', targets: 7 }],
+                        order: [[7, 'asc']],
+                        language: {
+                            "info": "Mostrando _TOTAL_ registros",
+                            "paginate": { "next": "Sig", "previous": "Ant" },
+                            "zeroRecords": "No hay coincidencias"
+                        }
+                    });
+
+                    $('#mainSearch').on('keyup input', function () {
+                        var val = $(this).val().trim();
+                        if (val.length < 1) {
+                            $('#contenedorTabla').hide();
+                            $('#mensajeVacio').show();
+                            table.search('').draw();
+                        } else {
+                            $('#contenedorTabla').show();
+                            $('#mensajeVacio').hide();
+                            table.search(val).order([7, 'asc']).draw();
+                        }
+                    });
+
+                    table.on('draw', function () {
+                        var body = $(table.table().body());
+                        body.unmark();
+                        var searchVal = table.search();
+                        if (searchVal) {
+                            searchVal.split(' ').forEach(word => {
+                                if (word.length > 2) body.mark(word);
+                            });
+                        }
+                    });
+                }
+            });
         });
-    });
-</script>
+
+        function extraerCuentas(texto) {
+            var cuentas = [];
+            var lineas = texto.split('\n');
+
+            lineas.forEach(function (linea) {
+                linea = linea.trim();
+                if (!linea) return;
+
+                // Buscar patrón de cuenta (10 dígitos seguidos de _TP_)
+                var matchDesc = linea.match(/(\d{10})_TP_/i);
+                if (matchDesc) {
+                    var cuenta = matchDesc[1].replace(/[^0-9]/g, '');
+                    if (cuenta && cuenta.length === 10 && !cuentas.includes(cuenta)) {
+                        cuentas.push(cuenta);
+                    }
+                    return;
+                }
+
+                // Buscar en columnas separadas por tabs (formato U2000)
+                var columnas = linea.split('\t');
+                for (var i = 0; i < columnas.length; i++) {
+                    var matchCol = columnas[i].match(/^(\d{10})_/);
+                    if (matchCol) {
+                        var cuentaCol = matchCol[1].replace(/[^0-9]/g, '');
+                        if (cuentaCol && cuentaCol.length === 10 && !cuentas.includes(cuentaCol)) {
+                            cuentas.push(cuentaCol);
+                        }
+                        break;
+                    }
+                }
+
+                // Buscar cualquier número de 10 dígitos que empiece con 0
+                var matchNumeros = linea.match(/\b(0\d{9})\b/g);
+                if (matchNumeros) {
+                    matchNumeros.forEach(function (num) {
+                        var numLimpio = num.replace(/[^0-9]/g, '');
+                        if (numLimpio && numLimpio.length === 10 && !cuentas.includes(numLimpio)) {
+                            cuentas.push(numLimpio);
+                        }
+                    });
+                }
+            });
+
+            return [...new Set(cuentas)]; // Eliminar duplicados
+        }
+
+        function analizarDatos() {
+            var texto = $('#pasteArea').val();
+            if (!texto.trim()) {
+                alert('Por favor, pega los datos del OLT primero.');
+                return;
+            }
+
+            var cuentas = extraerCuentas(texto);
+            if (cuentas.length === 0) {
+                alert('No se encontraron números de cuenta en el texto pegado.');
+                return;
+            }
+
+            var resultados = [];
+            var conteoQR = {};
+            var encontrados = 0;
+            var noEncontrados = 0;
+
+            // Buscar cada cuenta
+            cuentas.forEach(function (cuenta) {
+                // Limpiar cuenta para búsqueda
+                var cuentaLimpia = cuenta.replace(/[^0-9]/g, '');
+                var datos = datosIndexados[cuentaLimpia] || datosIndexados[cuenta];
+                if (datos) {
+                    encontrados++;
+                    var qr = datos[1] || 'N/A';
+                    conteoQR[qr] = (conteoQR[qr] || 0) + 1;
+                    resultados.push({
+                        cuenta: cuenta,
+                        qr: qr,
+                        olt: datos[2] || '',
+                        fsp: datos[3] || '',
+                        ubicacion: datos[6] || '',
+                        puerto: datos[7] || '',
+                        encontrado: true
+                    });
+                } else {
+                    noEncontrados++;
+                    resultados.push({
+                        cuenta: cuenta,
+                        qr: 'NO ENCONTRADO',
+                        olt: '',
+                        fsp: '',
+                        ubicacion: '',
+                        puerto: '',
+                        encontrado: false
+                    });
+                }
+            });
+
+            // Ordenar: primero por QR (agrupados), luego por puerto
+            resultados.sort(function (a, b) {
+                if (a.encontrado !== b.encontrado) return a.encontrado ? -1 : 1;
+                if (a.qr !== b.qr) return a.qr.localeCompare(b.qr);
+                return parseInt(a.puerto) - parseInt(b.puerto);
+            });
+
+            // Actualizar estadísticas
+            $('#statTotal').text(cuentas.length);
+            $('#statEncontrados').text(encontrados);
+            $('#statNoEncontrados').text(noEncontrados);
+            $('#statQRs').text(Object.keys(conteoQR).length);
+
+            // Generar tabla de resultados
+            var html = '';
+            resultados.forEach(function (r) {
+                var rowClass = r.encontrado ? '' : 'not-found';
+                var qrCount = conteoQR[r.qr] || 0;
+                var badgeClass = 'qr-normal';
+                if (qrCount >= 5) badgeClass = 'qr-hot';
+                else if (qrCount >= 3) badgeClass = 'qr-warm';
+
+                html += '<tr class="' + rowClass + '">';
+                html += '<td><strong>' + r.cuenta + '</strong></td>';
+                html += '<td><span class="qr-badge ' + (r.encontrado ? badgeClass : '') + '">' + r.qr + '</span></td>';
+                html += '<td>' + r.olt + '</td>';
+                html += '<td>' + r.fsp + '</td>';
+                html += '<td>' + r.ubicacion + '</td>';
+                html += '<td>' + r.puerto + '</td>';
+                html += '<td>' + (r.encontrado ? qrCount : '-') + '</td>';
+                html += '</tr>';
+            });
+
+            $('#bodyResultados').html(html);
+            $('#resultadosAnalisis').addClass('visible');
+
+            // Scroll suave a resultados
+            $('html, body').animate({
+                scrollTop: $('#resultadosAnalisis').offset().top - 20
+            }, 500);
+        }
+
+        function limpiarAnalisis() {
+            $('#pasteArea').val('');
+            $('#resultadosAnalisis').removeClass('visible');
+            $('#bodyResultados').html('');
+        }
+    </script>
 
 </body>
+
 </html>
