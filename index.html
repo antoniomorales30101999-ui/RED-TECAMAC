@@ -19,6 +19,7 @@
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
     <style>
+        /* (Se mantiene todo tu estilo original) */
         * { box-sizing: border-box; }
         body { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; color: #e8e8e8; font-family: 'Segoe UI', sans-serif; padding: 0; margin: 0; }
         .app-header { background: linear-gradient(135deg, #00d4ff 0%, #0077b6 50%, #004a99 100%); color: white; padding: 30px 20px; text-align: center; box-shadow: 0 4px 30px rgba(0, 212, 255, 0.3); position: relative; overflow: hidden; }
@@ -54,7 +55,6 @@
         .qr-normal { background: rgba(0, 119, 182, 0.15); color: #0077b6; }
         .not-found { background: rgba(255, 82, 82, 0.1) !important; color: #ff5252 !important; }
         .footer-info { text-align: center; padding: 20px; color: #666; font-size: 0.85rem; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(255, 65, 108, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 65, 108, 0); } }
     </style>
 </head>
 
@@ -157,9 +157,11 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mark.js/8.11.1/jquery.mark.min.js"></script>
 
     <script>
         var table;
+        var tableResultados; // Variable para controlar la tabla de resultados
         var datosCSV = [];
         var datosIndexados = {};
 
@@ -180,11 +182,11 @@
                     datosCSV = results.data.slice(1);
                     $('#totalRegistros').text(datosCSV.length.toLocaleString());
 
-                    // Indexación mejorada para búsqueda instantánea
                     datosCSV.forEach(function (row) {
                         if (row[0]) {
-                            var cuentaLimpia = row[0].replace(/\D/g, '').trim();
+                            var cuentaLimpia = row[0].replace(/[^0-9]/g, '').trim();
                             datosIndexados[cuentaLimpia] = row;
+                            datosIndexados[row[0].trim()] = row;
                         }
                     });
 
@@ -215,15 +217,30 @@
         });
 
         function extraerCuentas(texto) {
-            // Regex mejorado para capturar números de 10 dígitos o formato _TP_
-            var regex = /(?:0\d{9})|(?:\d{10}(?=_TP_))/g;
-            var matches = texto.match(regex) || [];
-            return [...new Set(matches)];
+            var cuentas = [];
+            var lineas = texto.split('\n');
+            lineas.forEach(function (linea) {
+                linea = linea.trim();
+                if (!linea) return;
+                var matchDesc = linea.match(/(\d{10})_TP_/i);
+                if (matchDesc) {
+                    cuentas.push(matchDesc[1]);
+                } else {
+                    var matchNumeros = linea.match(/\b(0\d{9})\b/g);
+                    if (matchNumeros) { matchNumeros.forEach(n => cuentas.push(n)); }
+                }
+            });
+            return [...new Set(cuentas)];
         }
 
         function analizarDatos() {
             var texto = $('#pasteArea').val();
             if (!texto.trim()) return alert('Pega los datos primero.');
+
+            // Si ya existe una tabla de resultados previa, la destruimos para crear una nueva
+            if (tableResultados) {
+                tableResultados.destroy();
+            }
 
             var cuentas = extraerCuentas(texto);
             var resultados = [];
@@ -232,8 +249,8 @@
             var noEncontrados = 0;
 
             cuentas.forEach(function (cuenta) {
-                var cuentaLimpia = cuenta.replace(/\D/g, '');
-                var datos = datosIndexados[cuentaLimpia];
+                var cuentaLimpia = cuenta.replace(/[^0-9]/g, '');
+                var datos = datosIndexados[cuentaLimpia] || datosIndexados[cuenta];
                 
                 if (datos) {
                     encontrados++;
@@ -263,11 +280,6 @@
                 var rowClass = r.encontrado ? '' : 'not-found';
                 var qrCount = conteoQR[r.qr] || 0;
                 var badgeClass = qrCount >= 5 ? 'qr-hot' : (qrCount >= 3 ? 'qr-warm' : 'qr-normal');
-                
-                // Link dinámico a Google Maps si existen coordenadas
-                var contenidoUbicacion = (r.lat && r.lon) 
-                    ? `<a href="https://www.google.com/maps?q=${r.lat},${r.lon}" target="_blank" style="text-decoration:none;">📍 ${r.ubicacion || 'Ver Mapa'}</a>` 
-                    : (r.ubicacion || '-');
 
                 html += '<tr class="' + rowClass + '">';
                 html += '<td><strong>' + r.cuenta + '</strong></td>';
@@ -276,13 +288,21 @@
                 html += '<td>' + r.fsp + '</td>';
                 html += '<td>' + r.lat + '</td>';
                 html += '<td>' + r.lon + '</td>';
-                html += '<td>' + contenidoUbicacion + '</td>';
+                html += '<td>' + r.ubicacion + '</td>';
                 html += '<td>' + r.puerto + '</td>';
                 html += '<td>' + (r.encontrado ? qrCount : '-') + '</td>';
                 html += '</tr>';
             });
 
             $('#bodyResultados').html(html);
+            
+            // Inicializamos DataTable en la tabla de resultados para permitir el ordenamiento
+            tableResultados = $('#tablaResultados').DataTable({
+                dom: 'rtip',
+                pageLength: 50,
+                language: { "info": "Mostrando _TOTAL_ resultados", "paginate": { "next": "Sig", "previous": "Ant" } }
+            });
+
             $('#statTotal').text(cuentas.length);
             $('#statEncontrados').text(encontrados);
             $('#statNoEncontrados').text(noEncontrados);
@@ -291,9 +311,13 @@
         }
 
         function limpiarAnalisis() {
+            if (tableResultados) {
+                tableResultados.destroy();
+                tableResultados = null;
+            }
+            $('#bodyResultados').empty();
             $('#pasteArea').val('');
             $('#resultadosAnalisis').removeClass('visible');
-            $('#bodyResultados').empty();
         }
     </script>
 
