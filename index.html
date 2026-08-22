@@ -13,6 +13,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="RedTecamac">
 
+    <!-- Íconos de la App -->
+    <link rel="icon" type="image/png" sizes="192x192" href="./logo-192.png">
+    <link rel="apple-touch-icon" href="./logo-192.png">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
@@ -61,7 +65,7 @@
         .qr-normal { background: rgba(0, 119, 182, 0.15); color: #0077b6; }
         .footer-info { text-align: center; padding: 15px; color: #aaa; font-size: 0.85rem; }
 
-        /* Estilos del Login en Pantalla Completa integrados al tema */
+        /* Login Overlay */
         .login-overlay {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -117,7 +121,7 @@
                 <div id="loginError" style="color: #ff5252; font-size: 0.85rem; margin-bottom: 10px; display: none;">
                     ⚠️ Usuario o contraseña incorrectos
                 </div>
-                <button type="submit" class="btn-analyze" style="width: 100%; margin-top: 5px;">Ingresar</button>
+                <button type="submit" id="btnLoginSubmit" class="btn-analyze" style="width: 100%; margin-top: 5px;">Ingresar</button>
             </form>
         </div>
     </div>
@@ -213,25 +217,40 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
     <script>
-        // LISTADO DE USUARIOS AUTORIZADOS
-        const USUARIOS = {
-            "antonio": "Tecamac2026*",
-            "mildred": "MA123",
-            "supervisor": "Tecamac2026*",
-            "francisco": "Tecamac2026*"
-        };
+        // URL completa conectada a tu base de datos de usuarios en Google Sheets
+        const API_URL = "https://script.google.com/macros/s/AKfycbyWLcqx-rxte7il-DjfKcezToQJzTh1jezBjViP_Jdp-MVvknNQZP_oy2VBEvlwSQK4/exec";
 
         function procesarLogin() {
-            var u = $('#userInput').val().trim().toLowerCase();
+            var u = $('#userInput').val().trim();
             var p = $('#passInput').val();
 
-            if (USUARIOS[u] && USUARIOS[u] === p) {
-                sessionStorage.setItem("acceso_permitido", "true");
-                sessionStorage.setItem("usuario_nombre", u.toUpperCase());
-                iniciarSistema();
-            } else {
-                $('#loginError').show();
-            }
+            if (!u || !p) return;
+
+            $('#loginError').hide();
+            $('#btnLoginSubmit').text('Verificando...').prop('disabled', true);
+
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ usuario: u, password: p })
+            })
+            .then(response => response.json())
+            .then(data => {
+                $('#btnLoginSubmit').text('Ingresar').prop('disabled', false);
+
+                if (data.status === "success") {
+                    sessionStorage.setItem("acceso_permitido", "true");
+                    sessionStorage.setItem("usuario_nombre", data.usuario);
+                    iniciarSistema();
+                } else {
+                    $('#loginError').show();
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                $('#btnLoginSubmit').text('Ingresar').prop('disabled', false);
+                alert('Error al verificar la conexión con el servidor.');
+            });
         }
 
         function iniciarSistema() {
@@ -254,7 +273,6 @@
         var datosIndexados = {};
 
         $(document).ready(function () {
-            // Comprobación de sesión activa
             if (sessionStorage.getItem("acceso_permitido") === "true") {
                 iniciarSistema();
             }
@@ -269,7 +287,7 @@
         });
 
         function cargarBaseDatos() {
-            if (datosCSV.length > 0) return; // Evita doble carga si ya leyó el CSV
+            if (datosCSV.length > 0) return;
 
             setTimeout(function() {
                 Papa.parse("datos.csv", {
@@ -291,9 +309,10 @@
                         table = $('#tablaMaestra').DataTable({
                             data: datosCSV,
                             deferRender: true,
+                            scrollY: "50vh",
                             scrollCollapse: true,
                             dom: 'rtip',
-                            pageLength: 18,
+                            pageLength: 15,
                             language: { "info": "Mostrando _TOTAL_ registros", "paginate": { "next": "Sig", "previous": "Ant" } },
                             columnDefs: [{ targets: 8, defaultContent: "ACTIVA" }],
                             createdRow: function(row, data, dataIndex) {
@@ -326,11 +345,11 @@
             lineas.forEach(function (linea) {
                 linea = linea.trim();
                 if (!linea) return;
-                var matchDesc = linea.match(/(\d{10})_/);
+                var matchDesc = linea.match(/(\d{10})_TP_/i);
                 if (matchDesc) {
                     cuentas.push(matchDesc[1]);
                 } else {
-                    var matchNumeros = linea.match(/\d{10}/g);
+                    var matchNumeros = linea.match(/\b(0\d{9})\b/g);
                     if (matchNumeros) { matchNumeros.forEach(n => cuentas.push(n)); }
                 }
             });
