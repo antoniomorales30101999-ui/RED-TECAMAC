@@ -1,0 +1,21 @@
+{
+  "short_name": "RedTecamac",
+  "name": "RED TECAMAC - Análisis de Afectaciones",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2885/2885440.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2885/2885440.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#16213e",
+  "theme_color": "#00d4ff",
+  "display": "standalone",
+  "orientation": "portrait"
+}
