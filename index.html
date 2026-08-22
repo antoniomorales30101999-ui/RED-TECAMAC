@@ -217,8 +217,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
     <script>
-        // URL completa conectada a tu base de datos de usuarios en Google Sheets
-        const API_URL = "https://script.google.com/macros/s/AKfycbyWLcqx-rxte7il-DjfKcezToQJzTh1jezBjViP_Jdp-MVvknNQZP_oy2VBEvlwSQK4/exec";
+        // URL de tu Web App de Google Apps Script
+        const API_URL = "https://script.google.com/macros/s/AKfycbyWLcqx-rxte7il-DjfKcezToQJzTh1jezBjViP_Jdp-MVvknNQZP_oy2VBEvIwSQK4/exec";
 
         function procesarLogin() {
             var u = $('#userInput').val().trim();
@@ -229,10 +229,11 @@
             $('#loginError').hide();
             $('#btnLoginSubmit').text('Verificando...').prop('disabled', true);
 
-            fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ usuario: u, password: p })
+            const urlConParametros = `${API_URL}?usuario=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`;
+
+            fetch(urlConParametros, {
+                method: 'GET',
+                redirect: 'follow'
             })
             .then(response => response.json())
             .then(data => {
